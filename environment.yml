@@ -1,0 +1,13 @@
+name: contrail_ml
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy>=1.16.4
+  - scipy>=1.2.1
+  - scikit-learn>=0.24.1
+  - absl-py
+  - pytorch
+  - pre-commit
+  - black
+  - ruff
