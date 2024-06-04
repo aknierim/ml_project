@@ -12,6 +12,7 @@ dependencies:
   - absl-py
   - pytorch
   - jupyterlab
+  - google-cloud-storage
   - rich
   - pre-commit
   - black
