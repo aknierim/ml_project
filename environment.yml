@@ -1,4 +1,4 @@
-name: contrail_ml
+name: spectral_ml
 channels:
   - conda-forge
 dependencies:
