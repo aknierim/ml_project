@@ -7,7 +7,7 @@ repos:
     - id: check-case-conflict
     - id: check-merge-conflict
     - id: end-of-file-fixer
-    exclude: "project_presentation/"
+    exclude: "project_presentation/*"
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.6
