@@ -1,6 +1,8 @@
-name: spectral_ml
+name: radio_ml
 channels:
   - conda-forge
+  - pytorch
+  - nvidia
 dependencies:
   - python=3.11
   - numpy>=1.16.4
@@ -9,11 +11,14 @@ dependencies:
   - matplotlib
   - seaborn
   - pandas
-  - absl-py
+  - astropy
   - pytorch
+  - torchvision
+  - pytorch-cuda=12.1
   - jupyterlab
-  - google-cloud-storage
   - rich
+  - Pillow
+  - h5py
   - pre-commit
   - black
   - ruff
