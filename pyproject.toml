@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ml_project"
-description = "Spectral Class Prediction using neural networks"
+description = "Radio Galaxy Classification Using Neural Networks"
 readme = "README.md"
 authors = [
   {name = "Anno Knierim and Christian Arauner"}
@@ -32,6 +32,8 @@ dependencies = [
   "astropy >=6.1.0",
   "matplotlib ~=3.0",
   "numpy ~=1.16",
+  "torch",
+  "torchvision",
 ]
 
 [project.optional-dependencies]
