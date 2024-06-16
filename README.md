@@ -21,8 +21,8 @@ addressed to: Robert Becker, Physics Dept, University of California, Davis, CA  
 ## Installation
 
 To use the code in this repository, install the conda virtual environment found in
-`environment.yml`. An installation of [Miniforge3](https://github.com/conda-forge/miniforge) is recommended due
-to it providing a minimal installation of Python together with the fast and reliable mamba package
+`environment.yml`. An installation of [Miniforge3](https://github.com/conda-forge/miniforge) is recommended since
+it provides a minimal installation of Python together with the fast and reliable mamba package
 manager.
 
 The environment can be installed via
