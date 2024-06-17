@@ -21,3 +21,12 @@ repos:
       - id: ruff
         args: [--fix, --show-fixes]
       - id: ruff-format
+
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.8.5
+    hooks:
+      - id: nbqa-black
+      - id: nbqa-pyupgrade
+        args: ["--py37-plus"]
+      - id: nbqa-isort
+        args: ["--float-to-top"]
