@@ -1,4 +1,4 @@
-# Radio Galaxy Classification Using a Neural Net Approach
+# RadiO gaLaxy classiFication using a ResNet (ROLF)
 
 This project aims to use a neural net to classify galaxies in the
 [Radio Galaxy Dataset [1]](https://zenodo.org/records/7120632) created by Griese et al.
@@ -15,7 +15,7 @@ To these images, the following license applies:
 "Provenance: The FIRST project team: R.J. Becker, D.H. Helfand, R.L. White M.D. Gregg. S.A. Laurent-Muehleisen.
 Copyright: 1994, University of California. Permission is granted for publication and reproduction of this material
 for scholarly, educational, and private non-commercial use. Inquiries for potential commercial uses should be
-addressed to: Robert Becker, Physics Dept, University of California, Davis, CA  95616"
+addressed to: Robert Becker, Physics Dept, University of California, Davis, CA 95616"
 
 
 ## Installation
@@ -36,7 +36,8 @@ in the environment file depending on the version installed on your system.
 
 
 ## References
-[1] Griese, F., Kummer, J., & Rustige, L., floriangriese/RadioGalaxyDataset: v0.1.1 (v0.1.1), Zenodo (2022). [https://doi.org/10.5281/zenodo.7120632](https://doi.org/10.5281/zenodo.7120632)
+[1] Griese, F., Kummer, J., & Rustige, L., ***"Radio Galaxy Dataset (v0.1.3)"***, Zenodo (2022).
+[https://zenodo.org/doi/10.5281/zenodo.7113623](https://zenodo.org/doi/10.5281/zenodo.7113623)
 
-[2] R. H. Becker, R. L. White, D. J. Helfand, The FIRST Survey: Faint Images of the Radio Sky at Twenty Centimeters,
-The Astrophysical Journal 450 (1995) 559.
+[2] R. H. Becker, R. L. White, D. J. Helfand, ***"The FIRST Survey: Faint Images of the Radio Sky at Twenty Centimeters"***,
+The Astrophysical Journal, Vol. 450, p. 559 (1995).
