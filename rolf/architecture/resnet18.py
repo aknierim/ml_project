@@ -3,7 +3,7 @@
 import torch.nn as nn
 
 
-class ResNet(nn.Module):
+class ResNet18(nn.Module):
     """Main network architecture class. This follows
     the ResNet18 architecture.
     """
