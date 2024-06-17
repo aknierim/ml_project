@@ -1,3 +1,5 @@
+"""Starts the training process."""
+
 import datetime
 import uuid
 from pathlib import Path
@@ -8,10 +10,10 @@ import tomli
 
 @click.command()
 @click.option(
-    "--config_path",
+    "--config-path",
     "-c",
     type=click.Path(exists=False, dir_okay=True),
-    help="Path to save the model to.",
+    help="Path to the config file.",
 )
 def main(config_path):
     """Start training of the network."""
