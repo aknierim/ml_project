@@ -9,6 +9,10 @@ __pycache__/
 # ruff
 .ruff_cache
 
+# version from setuptools
+rolf/_version_cache.py
+rolf/_version.py
+
 # Distribution / packaging
 .Python
 build/
