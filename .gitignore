@@ -14,7 +14,7 @@ rolf/_version_cache.py
 rolf/_version.py
 
 # data submodule
-!rolf/data/
+!/rolf/data/
 
 # Distribution / packaging
 .Python
