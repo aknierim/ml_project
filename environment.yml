@@ -16,10 +16,16 @@ dependencies:
   - torchvision
   - pytorch-cuda=12.1
   - jupyterlab
+  - jupyterlab_code_formatter
+  - optuna
+  - optuna-dashboard
   - rich
   - Pillow
   - h5py
   - pre-commit
   - black
   - ruff
+  - nbqa
   - pip
+pip:
+  - jupyterlab-optuna
