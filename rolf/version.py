@@ -9,8 +9,8 @@ except Exception:
     import warnings
 
     warnings.warn(
-        "Could not determine radiotools version. This indicates"
-        " a broken installation. Please install radiotools from"
+        "Could not determine ROLF version. This indicates"
+        " a broken installation. Please install ROLF from"
         " the local git repository."
     )
     del warnings
