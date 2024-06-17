@@ -1,4 +1,4 @@
-# RadiO gaLaxy classiFication using a ResNet (ROLF)
+# *R*adi*O* ga*L*axy classi*F*ication using a ResNet (ROLF)
 
 This project aims to use a neural net to classify galaxies in the
 [Radio Galaxy Dataset [1]](https://zenodo.org/records/7120632) created by Griese et al.
