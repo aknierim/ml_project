@@ -13,6 +13,9 @@ __pycache__/
 rolf/_version_cache.py
 rolf/_version.py
 
+# data submodule
+!rolf/data/
+
 # Distribution / packaging
 .Python
 build/
