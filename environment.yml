@@ -28,5 +28,5 @@ dependencies:
   - ruff
   - nbqa
   - pip
-pip:
-  - jupyterlab-optuna
+  - pip:
+    - jupyterlab-optuna
