@@ -23,6 +23,7 @@ dependencies:
   - rich
   - Pillow
   - h5py
+  - pyside6
   - pre-commit
   - black
   - ruff
