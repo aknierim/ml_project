@@ -2,7 +2,7 @@ from pathlib import Path
 
 import click
 
-from rolf.data import GetData
+from rolf.io import GetData
 
 
 @click.command()
