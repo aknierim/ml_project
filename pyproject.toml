@@ -42,6 +42,7 @@ rolf-info = "rolf.info:main"
 rolf-train = "rolf.tools.train:main"
 rolf-data = "rolf.tools.get_data:main"
 rolf-view = "rolf.io.viewer:main"
+rolf-unpack = "rolf.io.unpack:unzip"
 
 [project.optional-dependencies]
 dev = [
