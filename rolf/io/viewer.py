@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 
 
 class ImageViewerApp(QMainWindow):
-    def __init__(self, directory):
+    def __init__(self, directory, recursive):
         super().__init__()
 
         if not directory:
@@ -26,11 +26,13 @@ class ImageViewerApp(QMainWindow):
         if not directory.is_dir():
             raise ValueError("Please provide a path to a directory!")
 
-        exts = [".png", ".jpeg", ".jpg"]
-        self.image_paths = [p for p in directory.iterdir() if p.suffix in exts]
+        if recursive:
+            self.image_paths = list(directory.glob("**/*[.png .jpeg .jpg]"))
+        else:
+            self.image_paths = list(directory.glob("*[.png .jpeg .jpg]"))
 
         if not self.image_paths:
-            raise RuntimeError(
+            raise FileNotFoundError(
                 f"No image files found in {directory.absolute()}!"
                 " Make sure there are .jpg or .png files under"
                 " the specified path."
@@ -116,9 +118,15 @@ class ImageViewerApp(QMainWindow):
     type=click.Path(exists=True, dir_okay=True, file_okay=False),
     help="Path to a directory containing <.jpg,.png> images.",
 )
-def main(directory):
+@click.option(
+    "--recursive",
+    "-r",
+    is_flag=True,
+    help="If True, also looks for images in subdirectories.",
+)
+def main(directory, recursive):
     app = QApplication(sys.argv)
-    window = ImageViewerApp(directory)
+    window = ImageViewerApp(directory, recursive)
     window.show()
     sys.exit(app.exec_())
 
