@@ -1,3 +1,3 @@
-from .download import GetData
+from .data import GetData
 
 __all__ = ["GetData"]
