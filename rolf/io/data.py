@@ -106,8 +106,8 @@ def read_hdf5(filepath: str | Path):
             ra.append(ra_attr)
             dec.append(dec_attr)
             sources.append(source_attr)
-            labels.append(filepath_attr)
-            filepaths.append(label_entry)
+            filepaths.append(filepath_attr)
+            labels.append(label_entry)
             splits.append(split_entry)
 
         table = QTable(
