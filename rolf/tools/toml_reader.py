@@ -1,5 +1,7 @@
-import tomli
 from pathlib import Path
+
+import tomli
+
 
 class ReadConfig:
     def __init__(self, config_path) -> None:
@@ -13,14 +15,15 @@ class ReadConfig:
 
     def training(self) -> dict:
         self.training_config = {}
-        self.training_config["paths"] = {"data": Path(self.paths["data"]), 
-                                         "model": Path(self.paths["model"]),
-                                         }
+        self.training_config["paths"] = {
+            "data": Path(self.paths["data"]),
+            "model": Path(self.paths["model"]),
+        }
         self.training_config["mode"] = self.mode
         self.training_config["parameters"] = self.meta
 
         return self.training_config
-    
+
     def validation(self) -> dict:
         self.validation_config = self.eval
 
