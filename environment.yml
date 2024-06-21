@@ -15,7 +15,9 @@ dependencies:
   - pytorch
   - torchvision
   - pytorch-cuda=12.1
+  - ipywidgets
   - joblib
+  - jupyter
   - jupyterlab
   - jupyterlab_code_formatter
   - optuna
