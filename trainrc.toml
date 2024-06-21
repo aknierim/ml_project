@@ -3,7 +3,7 @@ data = "./data/"
 model = "./build/models/"
 
 [mode]
-quiet = false
+verbose = true
 gpu = true
 
 [meta]
