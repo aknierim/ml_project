@@ -1,11 +1,11 @@
-"""Main architecture of this project, following the ResNet18 architecture."""
+"""Main architecture of this project, following the ResNet8 architecture."""
 
 import torch.nn as nn
 
 
-class ResNet18(nn.Module):
+class ResNet8(nn.Module):
     """Main network architecture class. This follows
-    the ResNet18 architecture.
+    the ResNet8 architecture.
     """
 
     def __init__(self) -> None:
