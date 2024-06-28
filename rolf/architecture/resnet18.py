@@ -1,153 +1,115 @@
-"""Main architecture of this project, following the ResNet18 architecture."""
+"""Main architecture of this project, following the ResNet architecture."""
 
 import torch.nn as nn
 
 
-class ResNet18(nn.Module):
-    """Main network architecture class. This follows
-    the ResNet18 architecture.
-    """
-
-    def __init__(self) -> None:
-        """Initializes the architecture. The main building
-        blocks are applied sequentially after a pre block
-        and are followed by a final block.
-        """
-        super().__init__()
-
-        self.pre_block = nn.Sequential(
-            nn.Conv2d(
-                in_channels=1, out_channels=64, kernel_size=3, stride=1, padding=1
-            ),
-            nn.PReLU(),
-        )
-
-        self.blocks = nn.Sequential(
-            ConvBlock(64, 64),
-            ConvBlock(64, 64),
-            ConvBlock(128, 128, stride=2),
-            ConvBlock(128, 128),
-            ConvBlock(256, 256, stride=2),
-            ConvBlock(256, 256),
-            ConvBlock(512, 512, stride=2),
-            ConvBlock(512, 512),
-        )
-
-        self.final_block = nn.Sequential(
-            nn.Conv2d(
-                in_channels=512, out_channels=4, kernel_size=3, stride=1, padding=1
-            ),
-            nn.BatchNorm2d(4),
-        )
-
-    def forward(self, x):
-        """Skip connection if needed."""
-        # WIP
-        pass
-
-
-class ConvBlock(nn.Module):
+class ResNet(nn.Module):
     def __init__(
         self,
-        n_in: int,
-        n_out: int,
-        kernel_size: int | tuple = 3,
-        stride: int | tuple = 1,
-        padding: int | tuple = 0,
-        padding_mode: str = "reflect",
-        dilation: int | tuple = 1,
-        groups: int = 1,
-        bias: bool = False,
+        num_classes: int = 4,
+        block_groups: list[int] = [2, 2, 2, 2],
+        hidden_channels: list[int] = [16, 32, 64, 128],
+        activation_name: str = "prelu",
+        available_activation: dict = {},
+        block_name: str = "ResBlock",
+        available_blocks: dict = {},
+        **kwargs,
     ) -> None:
-        """Initializes the convolutional block class.
+        """Residual net architecture.
 
         Parameters
         ----------
-        n_in : int
-            Number of channels in the input image.
-        n_out : int
-            Number of channels produced by the convolution.
-        kernel_size : int or tuple, optional
-            Size of the convolving kernel. Default: 3
-        stride : int or tuple, optional
-            Stride of the convolution. Default: 1
-        padding : int or tuple, optional
-            Size of the padding added to all four image sides.
-            Default: 0
-        padding_mode : str, optional
-            `'zeros'`, `'reflect'`, `'replicate'` or `'circular'`.
-            Default: `'reflect'`
-        dilation : int or tuple, optional
-            Spacing between kernel elements. Default: 1
-        groups : int, optional
-            Number of blocked connections from input channels to
-            output channels. Default: 1
-        bias : bool, optional
-            If `True`, adds a learnable bias to the output.
-            Default: `False`
+        num_classes : int, optional
+            Number of classification outputs. Default: 4.
+        block_groups : list[int], optional
+            List of block numbers per group. Every first block
+            of a group will downsample the input, except the very
+            first block in the net.
+        hidden_channels : list[int], optional
+            List of hidden channels per block.
+        activation_name : str, optional
+            Name of the activation function to use.
+        available_activation : dict, optional
+            Dictionary of available activation functions.
+            Format: 'activation_name': nn.modules.activation
+        block_name : str, optional
+            Name of the ResNet Block.
+        available_blocks : dict, optional
+            Dictionary of available blocks.
+            Format: 'block_name': block_object
         """
-        super().__init__()
+        super().__ini__()
 
-        self.n_in = n_in
-        self.n_out = n_out
-        self.kernel_size = kernel_size
-        self.stride = stride
-        self.padding = padding
-        self.padding_mode = padding_mode
-        self.dilation = dilation
-        self.groups = groups
-        self.bias = bias
+        if block_name not in available_blocks.keys():
+            raise ValueError(f"No block '{block_name}' in available_blocks!")
 
-        self.conv = self._convolution_block()
-        self.pool = self._pool()
+        if activation_name not in available_activation.keys():
+            raise ValueError(
+                f"No activation function named '{activation_name}' "
+                "in available_activation!"
+            )
 
-    def _convolution_block(self):
-        """Returns the main building block consisting
-        of a Conv2d layer followed by BatchNorm2d, activation
-        function (PReLU), a second Conv2d layer, and another
-        BatchNorm2d.
-        """
-        return nn.Sequential(
-            nn.Conv2d(
-                in_channels=self.n_in,
-                out_channels=self.n_out,
-                kernel_size=self.kernel_size,
-                stride=self.stride,
-                padding=self.padding,
-                padding_mode=self.padding_mode,
-                dilation=self.dilation,
-                groups=self.groups,
-                bias=self.bias,
-            ),
-            nn.BatchNorm2d(self.n_out),
-            nn.PReLU(),
-            nn.Conv2d(
-                in_channels=self.n_in,
-                out_channels=self.n_out,
-                kernel_size=self.kernel_size,
-                stride=self.stride,
-                padding=self.padding,
-                padding_mode=self.padding_mode,
-                dilation=self.dilation,
-                groups=self.groups,
-                bias=self.bias,
-            ),
-            nn.BatchNorm2d(self.n_out),
+        self.hyperparams = {
+            "num_classes": num_classes,
+            "hidden_channels": hidden_channels,
+            "block_groups": block_groups,
+            "activation_name": activation_name,
+            "activation": available_activation[activation_name],
+            "block_type": available_blocks[block_name],
+        }
+
+        self._create_net()
+        self._init_params()
+
+    def _create_net(self):
+        hidden_channels = self.hyperparams["hidden_channels"]
+
+        if self.hyperparams["block_type"] == PreActBlock():
+            self.input = nn.Sequential(
+                nn.Conv2d(3, hidden_channels[0], kernel_size=3, padding=1, bias=False),
+            )
+        else:
+            self.input = nn.Sequential(
+                nn.Conv2d(3, hidden_channels[0], kernel_size=3, padding=1, bias=False),
+                nn.BatchNorm2d(hidden_channels[0]),
+                self.hyperparams["activation"](),
+            )
+
+        blocks = []
+        for idx, group in enumerate(self.hyperparams["block_groups"]):
+            for block in range(group):
+                subsample = block == 0 and idx > 0
+                blocks.append(
+                    self.hyperparams["block_type"](
+                        c_in=hidden_channels[idx if not subsample else (idx - 1)],
+                        activation=self.hyperparams["activation"],
+                        subsample=subsample,
+                        c_out=hidden_channels[idx],
+                    )
+                )
+
+        self.blocks = nn.Sequential(*blocks)
+
+        self.output = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Linear(hidden_channels[-1], self.hyperparams["num_classes"]),
         )
 
-    def _pool(self):
-        """Max pooling layer that is applied after the (main)
-        convolution building block.
-        """
-        return nn.MaxPool2d(
-            kernel_size=self.kernel_size,
-            stride=self.stride,
-            padding=self.padding,
-            dilation=self.dilation,
-        )
+    def _init_params(self):
+        for module in self.modules():
+            if isinstance(module, nn.Conv2d):
+                nn.init.kaiming_normal_(
+                    module.weight,
+                    mode="fan_out",
+                    nonlinearity=self.hyperparams["activation_name"],
+                )
+            elif isinstance(module, nn.BatchNorm2d):
+                nn.init.constant_(module.weight, 1)
+                nn.init.constant_(module.bias, 0)
 
     def forward(self, x):
-        """Skip connection that adds the input of
-        the ConvBlock to it's output.
-        """
-        return x + self.conv(x)
+        x = self.input(x)
+        x = self.blocks(x)
+        x = self.output(x)
+        return x
