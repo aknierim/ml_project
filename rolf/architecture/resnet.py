@@ -1,6 +1,7 @@
 """Main architecture of this project, following the ResNet architecture."""
 
 import torch.nn as nn
+from rolf.blocks import PreActBlock
 
 
 class ResNet(nn.Module):
