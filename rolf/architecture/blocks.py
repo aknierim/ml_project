@@ -2,7 +2,7 @@ import torch.nn as nn
 
 
 class ResBlock(nn.Module):
-    def __init__(self, c_in, activation, subsample=False, c_out=-1):
+    def __init__(self, c_in, activation, subsample=False, c_out=-1) -> None:
         super().__init__()
 
         if not subsample:
@@ -28,13 +28,13 @@ class ResBlock(nn.Module):
         )
         self.act_fn = activation()
 
-        def forward(self, x):
-            temp = self.block()
+    def forward(self, x):
+        temp = self.block()
 
-            if self.downsample is not None:
-                x = self.downsample(x)
+        if self.downsample is not None:
+            x = self.downsample(x)
 
-            return temp + x
+        return temp + x
 
 
 class PreActBlock(nn.Module):

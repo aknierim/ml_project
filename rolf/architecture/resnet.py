@@ -1,7 +1,10 @@
 """Main architecture of this project, following the ResNet architecture."""
 
 import torch.nn as nn
-from rolf.blocks import PreActBlock
+from .blocks import PreActBlock, ResBlock
+
+BLOCKS = {"ResBlock": ResBlock, "PreActBlock": PreActBlock}
+ACTIVATION = {"prelu": nn.PReLU, "relu": nn.ReLU, "mish": nn.Mish}
 
 
 class ResNet(nn.Module):
@@ -11,9 +14,7 @@ class ResNet(nn.Module):
         block_groups: list[int] = [2, 2, 2, 2],
         hidden_channels: list[int] = [16, 32, 64, 128],
         activation_name: str = "prelu",
-        available_activation: dict = {},
         block_name: str = "ResBlock",
-        available_blocks: dict = {},
         **kwargs,
     ) -> None:
         """Residual net architecture.
@@ -39,12 +40,12 @@ class ResNet(nn.Module):
             Dictionary of available blocks.
             Format: 'block_name': block_object
         """
-        super().__ini__()
+        super().__init__()
 
-        if block_name not in available_blocks.keys():
+        if block_name not in BLOCKS.keys():
             raise ValueError(f"No block '{block_name}' in available_blocks!")
 
-        if activation_name not in available_activation.keys():
+        if activation_name not in ACTIVATION.keys():
             raise ValueError(
                 f"No activation function named '{activation_name}' "
                 "in available_activation!"
@@ -55,9 +56,11 @@ class ResNet(nn.Module):
             "hidden_channels": hidden_channels,
             "block_groups": block_groups,
             "activation_name": activation_name,
-            "activation": available_activation[activation_name],
-            "block_type": available_blocks[block_name],
+            "activation": ACTIVATION[activation_name],
+            "block_type": BLOCKS[block_name],
         }
+
+        print(self.hyperparams)
 
         self._create_net()
         self._init_params()
@@ -65,7 +68,7 @@ class ResNet(nn.Module):
     def _create_net(self):
         hidden_channels = self.hyperparams["hidden_channels"]
 
-        if self.hyperparams["block_type"] == PreActBlock():
+        if self.hyperparams["block_type"] == PreActBlock:
             self.input = nn.Sequential(
                 nn.Conv2d(3, hidden_channels[0], kernel_size=3, padding=1, bias=False),
             )
