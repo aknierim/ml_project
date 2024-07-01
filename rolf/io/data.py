@@ -9,6 +9,12 @@ import tomli
 from astropy.table import QTable
 from joblib import Parallel, delayed
 from rich.progress import Progress
+from torch import tensor
+from torch.utils.data import Dataset
+from torchvision import transforms
+from PIL import Image
+import matplotlib.image as mpimage
+
 
 ROOT = Path(__file__).parents[2].resolve()
 
@@ -73,6 +79,23 @@ class GetData:
         with requests.get(url, stream=True) as r:
             with open(filename, "wb") as f:
                 shutil.copyfileobj(r.raw, f)
+
+
+class CreateTorchDataset(Dataset):
+    def __init__(self, dataframe):
+        self.dataframe = dataframe
+        self.transform = transforms.Compose([transforms.ToTensor()])
+
+    def __len__(self):
+        return self.dataframe.shape[0]
+
+    def __getitem__(self, index):
+        image = self.dataframe.iloc[index]["img"]
+        image = mpimage.imread(image)
+        image = Image.fromarray(image)
+        image = self.transform(image)
+        label = self.dataframe.iloc[index]["label"]
+        return {"image": image, "targets": tensor(label)}
 
 
 def read_hdf5(filepath: str | Path):
