@@ -7,7 +7,9 @@ import torch.optim as optim
 import torch.utils.data as data
 from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint
 
-MODEL_DICT = {}
+from rolf.architecture import ResNet
+
+MODEL_DICT = {"ResNet": ResNet}
 
 
 def _create_model(model_name, model_hparams):
@@ -45,8 +47,6 @@ class TrainModule(L.LightningModule):
             This includes learning rate, weight decay, etc.
         """
         super().__init__()
-        # Exports the hyperparameters to a YAML file,
-        # and create "self.hparams" namespace
         self.save_hyperparameters()
 
         self.model = _create_model(model_name, model_hparams)
@@ -111,6 +111,7 @@ def train_model(
     test_loader: data.DataLoader,
     checkpoint_path: str | Path,
     save_name: str | Path = "",
+    epochs: int = 300,
     **kwargs,
 ):
     """Train the model passed via 'model_name'.
@@ -128,33 +129,27 @@ def train_model(
     if not save_name:
         save_name = model_name
 
-    # Create a PyTorch Lightning trainer with the generation callback
+    if not isinstance(checkpoint_path, Path):
+        checkpoint_path = Path(checkpoint_path)
+
     trainer = L.Trainer(
         default_root_dir=Path(checkpoint_path / save_name),
         accelerator="auto",
         devices=1,
-        max_epochs=180,
+        max_epochs=epochs,
         callbacks=[
-            # Save the best checkpoint based on the maximum val_acc
-            # recorded. Saves only weights and not optimizer
             ModelCheckpoint(save_weights_only=True, mode="max", monitor="val_acc"),
-            LearningRateMonitor("epoch"),  # Log every epoch
+            LearningRateMonitor("epoch"),
         ],
     )
 
-    # If True, we plot the computation graph in tensorboard
     trainer.logger._log_graph = True
-
-    # Optional logging argument
     trainer.logger._default_hp_metric = None
 
-    # Check whether pretrained model exists.
-    # If yes, load it and skip training
     pretrained_filename = Path(checkpoint_path / save_name).with_suffix(".ckpt")
 
     if pretrained_filename.exists():
         print(f"Found pretrained model at {pretrained_filename}, loading...")
-        # Automatically loads the model with the saved hyperparameters
         model = TrainModule.load_from_checkpoint(pretrained_filename)
     else:
         L.seed_everything(42)
@@ -162,9 +157,8 @@ def train_model(
         trainer.fit(model, train_loader, val_loader)
         model = TrainModule.load_from_checkpoint(
             trainer.checkpoint_callback.best_model_path
-        )  # Load best checkpoint after training
+        )
 
-    # Test best model on validation and test set
     val_result = trainer.test(model, dataloaders=val_loader, verbose=False)
     test_result = trainer.test(model, dataloaders=test_loader, verbose=False)
     result = {"test": test_result[0]["test_acc"], "val": val_result[0]["test_acc"]}
