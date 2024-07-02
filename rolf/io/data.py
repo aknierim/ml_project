@@ -9,12 +9,9 @@ import tomli
 from astropy.table import QTable
 from joblib import Parallel, delayed
 from rich.progress import Progress
-from torch import tensor
+from torch import FloatTensor
 from torch.utils.data import Dataset
-from torchvision import transforms
-from PIL import Image
-import matplotlib.image as mpimage
-
+from torchvision.io import read_image
 
 ROOT = Path(__file__).parents[2].resolve()
 
@@ -82,20 +79,38 @@ class GetData:
 
 
 class CreateTorchDataset(Dataset):
-    def __init__(self, dataframe):
-        self.dataframe = dataframe
-        self.transform = transforms.Compose([transforms.ToTensor()])
+    def __init__(
+        self,
+        img_labels: list[int],
+        img_filepaths: list[str],
+        img_dir: str | Path,
+        transform=None,
+        target_transform=None,
+    ):
+        if not isinstance(img_dir, Path):
+            img_dir = Path(img_dir)
+
+        self.img_labels = img_labels
+        self.img_filepaths = img_filepaths
+        self.img_dir = img_dir
+        self.transform = transform
+        self.target_transform = target_transform
 
     def __len__(self):
-        return self.dataframe.shape[0]
+        return len(self.img_labels)
 
-    def __getitem__(self, index):
-        image = self.dataframe.iloc[index]["img"]
-        image = mpimage.imread(image)
-        image = Image.fromarray(image)
-        image = self.transform(image)
-        label = self.dataframe.iloc[index]["label"]
-        return {"image": image, "targets": tensor(label)}
+    def __getitem__(self, idx):
+        img_path = self.img_dir / self.img_filepaths[idx]
+
+        image = read_image(img_path)
+        label = self.img_labels[idx]
+
+        if self.transform:
+            image = self.transform(image)
+        if self.target_transform:
+            label = self.target_transform(label)
+
+        return image.type(FloatTensor), label
 
 
 def read_hdf5(filepath: str | Path):
