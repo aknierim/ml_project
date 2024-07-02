@@ -60,6 +60,7 @@ class ResNet(nn.Module):
             "activation": ACTIVATION[activation_name],
             "block_type": BLOCKS[block_name],
         }
+        print(self.hyperparams)
 
         self._create_net()
         self._init_params()
@@ -105,7 +106,6 @@ class ResNet(nn.Module):
                 nn.init.kaiming_normal_(
                     module.weight,
                     mode="fan_out",
-                    nonlinearity=self.hyperparams["activation_name"],
                 )
             elif isinstance(module, nn.BatchNorm2d):
                 nn.init.constant_(module.weight, 1)
