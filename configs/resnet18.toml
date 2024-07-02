@@ -7,8 +7,8 @@ verbose = true
 gpu = true
 
 [meta]
-model_name = "ResNet8"
-batch_size = 60
+model_name = "ResNet18"
+batch_size = 20
 epochs = 180
 loss_func = "mse"
 
@@ -18,9 +18,9 @@ name = "ResNet"
 [net_hyperparams]
 num_classes = 4
 hidden_channels = [16, 32, 64, 128]
-block_groups = [2, 2, 2, 2]
+block_groups = [4, 4, 4, 4]
 block_name = "ResBlock"
-activation_name = "relu"
+activation_name = "mish"
 
 [optimizer]
 name = "SGD"
