@@ -1,6 +1,7 @@
 """Main architecture of this project, following the ResNet architecture."""
 
 import torch.nn as nn
+
 from .blocks import PreActBlock, ResBlock
 
 BLOCKS = {"ResBlock": ResBlock, "PreActBlock": PreActBlock}
@@ -68,11 +69,11 @@ class ResNet(nn.Module):
 
         if self.hyperparams["block_type"] == PreActBlock:
             self.input = nn.Sequential(
-                nn.Conv2d(3, hidden_channels[0], kernel_size=3, padding=1, bias=False),
+                nn.Conv2d(1, hidden_channels[0], kernel_size=3, padding=1, bias=False),
             )
         else:
             self.input = nn.Sequential(
-                nn.Conv2d(3, hidden_channels[0], kernel_size=3, padding=1, bias=False),
+                nn.Conv2d(1, hidden_channels[0], kernel_size=3, padding=1, bias=False),
                 nn.BatchNorm2d(hidden_channels[0]),
                 self.hyperparams["activation"](),
             )
@@ -84,7 +85,7 @@ class ResNet(nn.Module):
                 blocks.append(
                     self.hyperparams["block_type"](
                         c_in=hidden_channels[idx if not subsample else (idx - 1)],
-                        activation=self.hyperparams["activation"],
+                        act_fn=self.hyperparams["activation"],
                         subsample=subsample,
                         c_out=hidden_channels[idx],
                     )
