@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import lightning as L
-import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
@@ -10,6 +9,8 @@ from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint
 from rolf.architecture import ResNet
 
 MODEL_DICT = {"ResNet": ResNet}
+
+OPTIMIZERS = {"Adam": optim.AdamW, "SGD": optim.SGD}
 
 
 def _create_model(model_name, model_hparams):
@@ -53,21 +54,22 @@ class TrainModule(L.LightningModule):
         self.loss_module = nn.CrossEntropyLoss()
 
         # Example input for visualizing the graph in Tensorboard
-        self.example_input_array = torch.zeros((1, 3, 300, 300), dtype=torch.float32)
+        # self.example_input_array = torch.zeros((1, 1, 300, 300))
 
     def forward(self, imgs):
-        # Forward function that is run when visualizing the graph
         return self.model(imgs)
 
-    def configure_optimizers(self):
-        if self.hparams.optimizer_name == "Adam":
-            optimizer = optim.AdamW(self.parameters(), **self.hparams.optimizer_hparams)
-
-        elif self.hparams.optimizer_name == "SGD":
-            optimizer = optim.SGD(self.parameters(), **self.hparams.optimizer_hparams)
-
+    def configure_optimizers(self) -> tuple[list, list]:
+        if self.hparams.optimizer_name in OPTIMIZERS:
+            optimizer = OPTIMIZERS[self.hparams.optimizer_name](
+                self.parameters(), **self.hparams.optimizer_hparams
+            )
         else:
-            raise ValueError(f"Unknown optimizer: '{self.hparams.optimizer_name}'")
+            avail_opt = list(OPTIMIZERS.keys())
+            raise ValueError(
+                f"Unknown optimizer '{self.hparams.optimizer_name}'! "
+                f"Available optimizers are: {avail_opt}"
+            )
 
         # Reduce the learning rate by 0.1 after 100 and 150 epochs
         scheduler = optim.lr_scheduler.MultiStepLR(
