@@ -16,6 +16,7 @@ dependencies:
   - torchvision
   - torchinfo
   - pytorch-cuda=12.1
+  - lightning
   - joblib
   - jupyterlab
   - jupyterlab_code_formatter
