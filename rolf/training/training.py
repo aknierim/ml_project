@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import lightning as L
+import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
@@ -54,7 +55,7 @@ class TrainModule(L.LightningModule):
         self.loss_module = nn.CrossEntropyLoss()
 
         # Example input for visualizing the graph in Tensorboard
-        # self.example_input_array = torch.zeros((1, 1, 300, 300))
+        self.example_input_array = torch.zeros((1, 1, 300, 300))
 
     def forward(self, imgs):
         return self.model(imgs)
