@@ -1,0 +1,42 @@
+[paths]
+data = "../data/galaxy_data/all"
+model = "../build/checkpoints"
+
+[mode]
+verbose = true
+gpu = true
+
+[meta]
+save_name = "ResNet16_prelu_PreAct"
+batch_size = 20
+epochs = 180
+loss_func = "mse"
+
+[model]
+name = "ResNet"
+
+[net_hyperparams]
+num_classes = 4
+hidden_channels = [16, 32, 64, 128]
+block_groups = [4, 4, 4, 4]
+block_name = "PreActBlock"
+activation_name = "mish"
+
+[optimizer]
+name = "SGD"
+
+[optimizer_hyperparams]
+lr = 0.1
+momentum = 0.9
+weight_decay = 1e-4
+
+
+[tuning]
+hidden_channels = [16, 128, 16]
+block_groups = [1, 6, 1]
+block_names = ["ResBlock", "PreActBlock"]
+activation_names = ["relu", "prelu", "mish"]
+optimizers = ["SGD", "Adam"]
+lr = [0.1, 0.8, 0.1]
+momentum = [0.1, 1, 0.1]
+weight_decay = [1e-7, 1e-2, 10]
