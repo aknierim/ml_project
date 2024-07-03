@@ -28,6 +28,9 @@ class ReadConfig:
         self.training_config["net_hyperparams"] = self.net_hyperparams
         self.training_config["optimizer"] = self.optimizer["name"]
         self.training_config["opt_hyperparams"] = self.opt_hyperparams
+        self.training_config["save_name"] = self.meta["save_name"]
+        self.training_config["batch_size"] = self.meta["batch_size"]
+        self.training_config["epochs"] = self.meta["epochs"]
 
         return self.training_config
 
