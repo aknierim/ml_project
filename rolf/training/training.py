@@ -166,7 +166,7 @@ def train_model(
     test_result = trainer.test(model, dataloaders=test_loader, verbose=False)
     result = {"test": test_result[0]["test_acc"], "val": val_result[0]["test_acc"]}
 
-    return model, result
+    return model, result, trainer
 
 
 def main() -> None:
