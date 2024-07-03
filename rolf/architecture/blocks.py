@@ -110,10 +110,10 @@ class PreActBlock(nn.Module):
             else None
         )
 
-        def forward(self, x):
-            temp = self.net(x)
+    def forward(self, x):
+        temp = self.net(x)
 
-            if self.downsample is not None:
-                x = self.downsample(x)
+        if self.downsample is not None:
+            x = self.downsample(x)
 
-            return temp + x
+        return temp + x
