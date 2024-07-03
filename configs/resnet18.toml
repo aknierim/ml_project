@@ -7,7 +7,7 @@ verbose = true
 gpu = true
 
 [meta]
-model_name = "ResNet18"
+save_name = "ResNet18"
 batch_size = 20
 epochs = 180
 loss_func = "mse"
