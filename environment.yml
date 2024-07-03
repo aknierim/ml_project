@@ -17,7 +17,9 @@ dependencies:
   - torchinfo
   - pytorch-cuda=12.1
   - lightning
+  - ipywidgets
   - joblib
+  - jupyter
   - jupyterlab
   - jupyterlab_code_formatter
   - optuna
@@ -33,3 +35,4 @@ dependencies:
   - pip
   - pip:
     - jupyterlab-optuna
+    - tensorboard
