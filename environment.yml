@@ -14,7 +14,9 @@ dependencies:
   - astropy
   - pytorch
   - torchvision
+  - torchinfo
   - pytorch-cuda=12.1
+  - lightning
   - ipywidgets
   - joblib
   - jupyter
@@ -33,3 +35,4 @@ dependencies:
   - pip
   - pip:
     - jupyterlab-optuna
+    - tensorboard

@@ -1,3 +1,3 @@
-from .data import GetData
+from .data import CreateTorchDataset, GetData, read_hdf5
 
-__all__ = ["GetData"]
+__all__ = ["CreateTorchDataset", "GetData", "read_hdf5"]
