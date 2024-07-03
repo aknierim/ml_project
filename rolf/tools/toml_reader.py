@@ -8,6 +8,13 @@ class ReadConfig:
         self.config_path = Path(config_path)
         with open(self.config_path, "rb") as f:
             self.toml = tomli.load(f)
+
+        try:
+            self.tuning_toml = self.toml["tuning"]
+            self.tuning_mode = True
+        except KeyError:
+            self.tuning_mode = False
+
         self.paths = self.toml["paths"]
         self.mode = self.toml["mode"]
         self.meta = self.toml["meta"]
@@ -22,8 +29,6 @@ class ReadConfig:
             "data": Path(self.paths["data"]),
             "model": Path(self.paths["model"]),
         }
-        self.training_config["mode"] = self.mode
-        self.training_config["parameters"] = self.meta
         self.training_config["model_name"] = self.model["name"]
         self.training_config["net_hyperparams"] = self.net_hyperparams
         self.training_config["optimizer"] = self.optimizer["name"]
@@ -34,7 +39,19 @@ class ReadConfig:
 
         return self.training_config
 
-    # def validation(self) -> dict:
-    #     self.validation_config = self.eval
-    #
-    #     return self.validation_config
+    def tuning(self) -> dict:
+        if not self.tuning_mode:
+            raise ValueError(f"No tuning configuration found in {self.config_path}!")
+
+        self.tuning_cfg = {}
+
+        self.tuning_cfg["hidden_channels"] = tuple(self.tuning_toml["hidden_channels"])
+        self.tuning_cfg["block_groups"] = tuple(self.tuning_toml["block_groups"])
+        self.tuning_cfg["block_name"] = self.tuning_toml["block_names"]
+        self.tuning_cfg["activation_name"] = self.tuning_toml["activation_names"]
+        self.tuning_cfg["optimizer"] = self.tuning_toml["optimizers"]
+        self.tuning_cfg["lr"] = tuple(self.tuning_toml["lr"])
+        self.tuning_cfg["momentum"] = tuple(self.tuning_toml["momentum"])
+        self.tuning_cfg["weight_decay"] = tuple(self.tuning_toml["weight_decay"])
+
+        return self.tuning_cfg
