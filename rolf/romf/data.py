@@ -1,18 +1,26 @@
-from rolf.io.data import read_hdf5
-from sklearn.model_selection import train_test_split
 from pathlib import Path
+
 import numpy as np
+from sklearn.model_selection import train_test_split
+
+from rolf.io.data import ReadHDF5
 
 
 class LoadData:
     def __init__(self, data_path, random_state=None) -> None:
-        self.data_path = Path(data_path)
-        self.data = read_hdf5(self.data_path)
-        if random_state == None:
+        if not isinstance(data_path, Path):
+            data_path = Path(data_path)
+
+        h5 = ReadHDF5(data_path)
+        self.data = h5.get_full_data()
+
+        del h5
+
+        if random_state is None:
             self.random_state = np.random.mtrand.RandomState()
-        elif type(random_state) == int:
+        elif isinstance(random_state, int):
             self.random_state = np.random.mtrand.RandomState(random_state)
-        elif type(random_state) == np.random.mtrand.RandomState:
+        elif isinstance(random_state, np.random.mtrand.RandomState):
             self.random_state = random_state
         else:
             raise TypeError(
