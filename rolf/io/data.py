@@ -285,7 +285,8 @@ class ReadHDF5:
     def create_data_loaders(
         self,
         batch_size: int,
-        train_set: Dataset = None,
+        img_dir: str|Path,
+        train_set : Dataset = None,
         valid_set: Dataset = None,
         test_set: Dataset = None,
     ):
@@ -297,7 +298,7 @@ class ReadHDF5:
             pass
 
         if None in (train_set, valid_set, test_set):
-            train_set, valid_set, test_set = self.create_torch_datasets()
+            train_set, valid_set, test_set = self.create_torch_datasets(img_dir)
 
         train_loader = DataLoader(
             train_set,
