@@ -227,7 +227,7 @@ class ReadHDF5:
         )
 
         if self.validation_ratio and self.test_ratio:
-            table["labels"] = self._get_splits(table)
+            table["label"] = self._get_splits(table)
 
         del idx, entries, ra, dec, sources, filepaths, labels, splits
 
@@ -254,7 +254,7 @@ class ReadHDF5:
         df = pd.DataFrame({"filepath": filepaths, "label": labels, "split": splits})
 
         if self.validation_ratio and self.test_ratio:
-            df["labels"] = self._get_splits(df)
+            df["label"] = self._get_splits(df)
 
         return df
 
