@@ -220,7 +220,7 @@ class ReadHDF5:
                 "RA",
                 "DEC",
                 "source",
-                "filepaths",
+                "filepath",
                 "label",
                 "split",
             ),
@@ -251,7 +251,7 @@ class ReadHDF5:
                 labels.append(label_entry)
                 splits.append(split_entry)
 
-        df = pd.DataFrame({"filepaths": filepaths, "labels": labels, "splits": splits})
+        df = pd.DataFrame({"filepath": filepaths, "label": labels, "split": splits})
 
         if self.validation_ratio and self.test_ratio:
             df["labels"] = self._get_splits(df)
@@ -259,8 +259,8 @@ class ReadHDF5:
         return df
 
     def _get_splits(self, data):
-        X = data["filepaths"]
-        y = data["labels"]
+        X = data["filepath"]
+        y = data["label"]
 
         indices = np.arange(len(y))
 
