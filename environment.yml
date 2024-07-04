@@ -29,6 +29,7 @@ dependencies:
   - h5py
   - pyside6
   - pre-commit
+  - nbstripout
   - black
   - ruff
   - nbqa
