@@ -61,7 +61,6 @@ class SearchHyperparams:
             else:
                 # print("3", key, pars)
                 self.use[key] = pars
-        print(self.use)
         self.rf = RandomForestClassifier(**self.use, n_jobs=n_forest_jobs, random_state=self.random_state)
         
     def scorer(self, score) -> None:
