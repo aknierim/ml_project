@@ -22,3 +22,8 @@ repos:
         args: ["--py37-plus"]
       - id: nbqa-isort
         args: ["--float-to-top"]
+
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.7.1
+    hooks:
+      - id: nbstripout
