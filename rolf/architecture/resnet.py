@@ -60,7 +60,6 @@ class ResNet(nn.Module):
             "activation": ACTIVATION[activation_name],
             "block_type": BLOCKS[block_name],
         }
-        print(self.hyperparams)
 
         self._create_net()
         self._init_params()
