@@ -45,13 +45,29 @@ class ReadConfig:
 
         self.tuning_cfg = {}
 
-        self.tuning_cfg["hidden_channels"] = tuple(self.tuning_toml["hidden_channels"])
-        self.tuning_cfg["block_groups"] = tuple(self.tuning_toml["block_groups"])
         self.tuning_cfg["block_name"] = self.tuning_toml["block_names"]
         self.tuning_cfg["activation_name"] = self.tuning_toml["activation_names"]
         self.tuning_cfg["optimizer"] = self.tuning_toml["optimizers"]
-        self.tuning_cfg["lr"] = tuple(self.tuning_toml["lr"])
-        self.tuning_cfg["momentum"] = tuple(self.tuning_toml["momentum"])
-        self.tuning_cfg["weight_decay"] = tuple(self.tuning_toml["weight_decay"])
+        self.tuning_cfg["hidden_channels"] = self.tuning_toml["hidden_channels"]
+        self.tuning_cfg["block_groups"] = {
+            "low": self.tuning_toml["block_groups"][0],
+            "high": self.tuning_toml["block_groups"][1],
+            "step": self.tuning_toml["block_groups"][2],
+        }
+        self.tuning_cfg["lr"] = {
+            "low": self.tuning_toml["lr"][0],
+            "high": self.tuning_toml["lr"][1],
+            "step": self.tuning_toml["lr"][2],
+        }
+        self.tuning_cfg["momentum"] = {
+            "low": self.tuning_toml["momentum"][0],
+            "high": self.tuning_toml["momentum"][1],
+            "step": self.tuning_toml["momentum"][2],
+        }
+        self.tuning_cfg["weight_decay"] = {
+            "low": self.tuning_toml["weight_decay"][0],
+            "high": self.tuning_toml["weight_decay"][1],
+            "log": True,
+        }
 
         return self.tuning_cfg
