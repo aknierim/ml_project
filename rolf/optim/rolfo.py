@@ -87,7 +87,7 @@ class ParameterOptimization:
             "weight_decay": use_tuning["weight_decay"],
         }
         if use_tuning["optimizer"] == "SGD":
-            optimizer_hparams["momentum"]
+            optimizer_hparams["momentum"] = use_tuning["momentum"]
 
         model_hparams = {}
         for key in ["hidden_channels", "block_groups", "block_name", "activation_name"]:
