@@ -115,9 +115,12 @@ class ParameterOptimization:
                 )
             except OutOfMemoryError as e:
                 pprint(e)
-                self.model_config["batch_size"] = int(
-                    self.model_config["batch_size"] / 2
-                )
+                if self.model_config["batch_size"] > 10:
+                    self.model_config["batch_size"] -= 10
+                else:
+                    self.model_config["batch_size"] = int(
+                        self.model_config["batch_size"] / 2
+                    )
                 pprint(
                     f"Reducing batch size to {self.model_config['batch_size']} "
                     "and trying again..."
