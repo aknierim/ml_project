@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 from optuna import Trial, create_study
+from rich.pretty import pprint
 
 from rolf.io.data import ReadHDF5
 from rolf.tools.toml_reader import ReadConfig
@@ -51,40 +52,49 @@ class ParameterOptimization:
         )
 
     def make_network(self, trial: Trial) -> None:
-        self.use_tuning = {}
+        use_tuning = {}
         for key in self.tuning_config:
             pars = self.tuning_config[key]
+
             if isinstance(pars, tuple):
                 if np.all([isinstance(pars[i], int) for i in range(3)]):
-                    self.use_tuning[key] = trial.suggest_int(
+                    use_tuning[key] = trial.suggest_int(
                         key, low=pars[0], high=pars[1], step=pars[2]
                     )
                 elif np.all([isinstance(pars[i], float) for i in range(3)]):
-                    self.use_tuning[key] = trial.suggest_float(
-                        key, low=pars[0], high=pars[1], step=pars[2]
-                    )
+                    if key != "weight_decay":
+                        use_tuning[key] = trial.suggest_float(
+                            key, low=pars[0], high=pars[1], step=pars[2]
+                        )
+                    else:
+                        use_tuning[key] = trial.suggest_float(
+                            key, low=pars[0], high=pars[1], step=None, log=True
+                        )
                 else:
                     raise TypeError("All parameters have to be of the same type")
             elif isinstance(pars, list):
-                self.use_tuning[key] = trial.suggest_categorical(key, pars)
+                use_tuning[key] = trial.suggest_categorical(key, pars)
             else:
-                self.use_tuning[key] = pars
+                use_tuning[key] = pars
 
-        self.use_tuning["block_groups"] = [self.use_tuning["block_groups"]] * 4
+        if isinstance(use_tuning["block_groups"], int):
+            use_tuning["block_groups"] = [use_tuning["block_groups"]] * 4
+        elif len(use_tuning["block_groups"]) != 4:
+            raise ValueError("Block groups not a list of len 4!")
 
-        if self.use_tuning["optimizer"] == "Adam":
+        if use_tuning["optimizer"] == "Adam":
             hparams_keys = ["lr", "weight_decay"]
         else:
             hparams_keys = ["lr", "momentum", "weight_decay"]
 
         optimizer_hparams = {}
         for key in hparams_keys:
-            val = self.use_tuning[key]
+            val = use_tuning[key]
             optimizer_hparams[key] = val
 
         model_hparams = {}
         for key in ["block_groups", "block_name", "activation_name"]:
-            val = self.use_tuning[key]
+            val = use_tuning[key]
             model_hparams[key] = val
 
         model_hparams["num_classes"] = self.model_config["net_hyperparams"][
@@ -94,6 +104,9 @@ class ParameterOptimization:
             "hidden_channels"
         ]
 
+        pprint(optimizer_hparams)
+        pprint(model_hparams)
+
         self.model, self.result, _ = train_model(
             model_name=self.model_config["model_name"],
             train_loader=self.train_loader,
@@ -102,7 +115,7 @@ class ParameterOptimization:
             checkpoint_path=self.model_config["paths"]["model"],
             save_name=self.model_config["save_name"],
             model_hparams=model_hparams,
-            optimizer_name=self.use_tuning["optimizer"],
+            optimizer_name=use_tuning["optimizer"],
             optimizer_hparams=optimizer_hparams,
             epochs=self.model_config["epochs"],
         )
