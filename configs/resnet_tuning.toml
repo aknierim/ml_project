@@ -8,7 +8,7 @@ gpu = true
 
 [meta]
 save_name = "resnet_tuning_j2_e90"
-batch_size = 40
+batch_size = 200
 epochs = 90
 loss_func = "mse"
 
