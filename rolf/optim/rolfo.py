@@ -9,6 +9,21 @@ from rolf.tools.toml_reader import ReadConfig
 from rolf.training.training import train_model
 
 
+def map_suggestions(trial, key):
+    trial_suggest = {
+        "hidden_channels": trial.suggest_categorical,
+        "block_groups": trial.suggest_int,
+        "block_name": trial.suggest_categorical,
+        "activation_name": trial.suggest_categorical,
+        "optimizer": trial.suggest_categorical,
+        "lr": trial.suggest_float,
+        "momentum": trial.suggest_float,
+        "weight_decay": trial.suggest_float,
+    }
+
+    return trial_suggest[key]
+
+
 class ParameterOptimization:
     def __init__(
         self,
@@ -53,59 +68,39 @@ class ParameterOptimization:
 
     def make_network(self, trial: Trial) -> None:
         use_tuning = {}
+
         for key in self.tuning_config:
-            pars = self.tuning_config[key]
-
-            if isinstance(pars, tuple):
-                if np.all([isinstance(pars[i], int) for i in range(3)]):
-                    use_tuning[key] = trial.suggest_int(
-                        key, low=pars[0], high=pars[1], step=pars[2]
-                    )
-                elif np.all([isinstance(pars[i], float) for i in range(3)]):
-                    if key != "weight_decay":
-                        use_tuning[key] = trial.suggest_float(
-                            key, low=pars[0], high=pars[1], step=pars[2]
-                        )
-                    else:
-                        use_tuning[key] = trial.suggest_float(
-                            key, low=pars[0], high=pars[1], step=None, log=True
-                        )
-                else:
-                    raise TypeError("All parameters have to be of the same type")
-            elif isinstance(pars, list):
-                use_tuning[key] = trial.suggest_categorical(key, pars)
+            if not isinstance(self.tuning_config[key], list):
+                use_tuning[key] = map_suggestions(trial, key)(
+                    key, **self.tuning_config[key]
+                )
             else:
-                use_tuning[key] = pars
+                use_tuning[key] = map_suggestions(trial, key)(
+                    key, self.tuning_config[key]
+                )
 
-        if isinstance(use_tuning["block_groups"], int):
-            use_tuning["block_groups"] = [use_tuning["block_groups"]] * 4
-        elif len(use_tuning["block_groups"]) != 4:
-            raise ValueError("Block groups not a list of len 4!")
+        use_tuning["hidden_channels"] *= np.geomspace(1, 8, num=4, dtype=int)
+        use_tuning["block_groups"] = np.full(4, use_tuning["block_groups"])
 
-        if use_tuning["optimizer"] == "Adam":
-            hparams_keys = ["lr", "weight_decay"]
-        else:
-            hparams_keys = ["lr", "momentum", "weight_decay"]
-
-        optimizer_hparams = {}
-        for key in hparams_keys:
-            val = use_tuning[key]
-            optimizer_hparams[key] = val
+        optimizer_hparams = {
+            "lr": use_tuning["lr"],
+            "weight_decay": use_tuning["weight_decay"],
+        }
+        if use_tuning["optimizer"] == "SGD":
+            optimizer_hparams["momentum"]
 
         model_hparams = {}
-        for key in ["block_groups", "block_name", "activation_name"]:
-            val = use_tuning[key]
-            model_hparams[key] = val
+        for key in ["hidden_channels", "block_groups", "block_name", "activation_name"]:
+            model_hparams[key] = use_tuning[key]
 
         model_hparams["num_classes"] = self.model_config["net_hyperparams"][
             "num_classes"
         ]
-        model_hparams["hidden_channels"] = self.model_config["net_hyperparams"][
-            "hidden_channels"
-        ]
 
-        pprint(optimizer_hparams)
+        pprint("Model parameters:")
         pprint(model_hparams)
+        pprint(f"Optimizer '{use_tuning['optimizer']}' parameters:")
+        pprint(optimizer_hparams)
 
         self.model, self.result, _ = train_model(
             model_name=self.model_config["model_name"],
