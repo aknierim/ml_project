@@ -11,9 +11,11 @@ from astropy.table import QTable
 from joblib import Parallel, delayed
 from rich.progress import Progress, track
 from sklearn.model_selection import train_test_split
+import torch
 from torch import FloatTensor
 from torch.utils.data import DataLoader, Dataset
 from torchvision.io import read_image
+from torchvision.transforms import v2 as transforms
 
 ROOT = Path(__file__).parents[2].resolve()
 
@@ -132,6 +134,9 @@ class ReadHDF5:
         self.validation_ratio = validation_ratio
         self.test_ratio = test_ratio
         self.random_state = random_state
+        self.train_transformer = None
+        self.val_transformer = None
+        self.test_transformer = None
 
     def get_full_data(self):
         idx = []
@@ -189,6 +194,8 @@ class ReadHDF5:
 
         del idx, entries, ra, dec, sources, filepaths, labels, splits
 
+        self.df = table
+        
         return table
 
     def get_labels_and_paths(self) -> pd.DataFrame:
@@ -254,6 +261,38 @@ class ReadHDF5:
 
         return splits
 
+    def make_transformer(self) -> None:
+        _ = self.get_full_data()
+        
+        mean, std = {}, {}
+        for label in ["train", "valid", "test"]:
+            frame = self.df[self.df["split"] == label]["img"] / 255
+            mean[label] = np.mean(frame)
+            std[label] = np.std(frame)
+
+        self.train_transformer = transforms.Compose(
+            [
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.RandomVerticalFlip(p=0.5),
+                transforms.ToDtype(torch.float32, scale=True),
+                transforms.Normalize(mean=mean, std=std),
+            ]
+        )
+        
+        self.val_transformer = transforms.Compose(
+            [
+                transforms.ToDtype(torch.float32, scale=True),
+                transforms.Normalize(mean=mean, std=std),
+            ]
+        )
+        
+        self.test_transformer = transforms.Compose(
+            [
+                transforms.ToDtype(torch.float32, scale=True),
+                transforms.Normalize(mean=mean, std=std),
+            ]
+        )
+
     def create_torch_datasets(
         self,
         img_dir: str | Path,
@@ -270,14 +309,19 @@ class ReadHDF5:
             train["label"].to_numpy(),
             train["filepath"].to_numpy(),
             img_dir=img_dir,
+            transform=self.train_transformer
         )
         self.valid_set = CreateTorchDataset(
             valid["label"].to_numpy(),
             valid["filepath"].to_numpy(),
             img_dir=img_dir,
+            transform=self.val_transformer
         )
         self.test_set = CreateTorchDataset(
-            test["label"].to_numpy(), test["filepath"].to_numpy(), img_dir=img_dir
+            test["label"].to_numpy(),
+            test["filepath"].to_numpy(),
+            img_dir=img_dir,
+            transform=self.test_transformer
         )
 
         return self.train_set, self.valid_set, self.test_set
