@@ -275,21 +275,21 @@ class ReadHDF5:
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.RandomVerticalFlip(p=0.5),
                 transforms.ToDtype(torch.float32, scale=True),
-                transforms.Normalize(mean=mean, std=std),
+                transforms.Normalize(mean=[mean["train"]], std=[std["train"]]),
             ]
         )
         
         self.val_transformer = transforms.Compose(
             [
                 transforms.ToDtype(torch.float32, scale=True),
-                transforms.Normalize(mean=mean, std=std),
+                transforms.Normalize(mean=[mean["valid"]], std=[std["valid"]]),
             ]
         )
         
         self.test_transformer = transforms.Compose(
             [
                 transforms.ToDtype(torch.float32, scale=True),
-                transforms.Normalize(mean=mean, std=std),
+                transforms.Normalize(mean=[mean["test"]], std=[std["test"]]),
             ]
         )
 
