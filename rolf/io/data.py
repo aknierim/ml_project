@@ -7,11 +7,11 @@ import numpy as np
 import pandas as pd
 import requests
 import tomli
+import torch
 from astropy.table import QTable
 from joblib import Parallel, delayed
 from rich.progress import Progress, track
 from sklearn.model_selection import train_test_split
-import torch
 from torch import FloatTensor
 from torch.utils.data import DataLoader, Dataset
 from torchvision.io import read_image
@@ -134,9 +134,11 @@ class ReadHDF5:
         self.validation_ratio = validation_ratio
         self.test_ratio = test_ratio
         self.random_state = random_state
-        self.train_transformer = None
-        self.val_transformer = None
-        self.test_transformer = None
+
+        self.data_keys = ["train", "valid", "test"]
+        self.transformer = {}
+        for key in self.data_keys:
+            self.transformer[key] = None
 
     def get_full_data(self):
         idx = []
@@ -195,7 +197,7 @@ class ReadHDF5:
         del idx, entries, ra, dec, sources, filepaths, labels, splits
 
         self.df = table
-        
+
         return table
 
     def get_labels_and_paths(self) -> pd.DataFrame:
@@ -263,14 +265,14 @@ class ReadHDF5:
 
     def make_transformer(self) -> None:
         _ = self.get_full_data()
-        
+
         mean, std = {}, {}
-        for label in ["train", "valid", "test"]:
+        for label in self.data_keys:
             frame = self.df[self.df["split"] == label]["img"] / 255
             mean[label] = np.mean(frame)
             std[label] = np.std(frame)
 
-        self.train_transformer = transforms.Compose(
+        self.transformer["train"] = transforms.Compose(
             [
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.RandomVerticalFlip(p=0.5),
@@ -278,15 +280,15 @@ class ReadHDF5:
                 transforms.Normalize(mean=[mean["train"]], std=[std["train"]]),
             ]
         )
-        
-        self.val_transformer = transforms.Compose(
+
+        self.transformer["valid"] = transforms.Compose(
             [
                 transforms.ToDtype(torch.float32, scale=True),
                 transforms.Normalize(mean=[mean["valid"]], std=[std["valid"]]),
             ]
         )
-        
-        self.test_transformer = transforms.Compose(
+
+        self.transformer["test"] = transforms.Compose(
             [
                 transforms.ToDtype(torch.float32, scale=True),
                 transforms.Normalize(mean=[mean["test"]], std=[std["test"]]),
@@ -296,7 +298,7 @@ class ReadHDF5:
     def create_torch_datasets(
         self,
         img_dir: str | Path,
-        transform=None,
+        transform: dict = {},
         target_transform=None,
     ) -> tuple:
         data = self.get_labels_and_paths()
@@ -305,23 +307,30 @@ class ReadHDF5:
         valid = data[data["split"] == "valid"]
         test = data[data["split"] == "test"]
 
+        if len(transform.keys()) != 0:
+            for key in self.data_keys:
+                try:
+                    self.transformer[key] = transform[key]
+                except KeyError:
+                    continue
+
         self.train_set = CreateTorchDataset(
             train["label"].to_numpy(),
             train["filepath"].to_numpy(),
             img_dir=img_dir,
-            transform=self.train_transformer
+            transform=self.transformer["train"],
         )
         self.valid_set = CreateTorchDataset(
             valid["label"].to_numpy(),
             valid["filepath"].to_numpy(),
             img_dir=img_dir,
-            transform=self.val_transformer
+            transform=self.transformer["valid"],
         )
         self.test_set = CreateTorchDataset(
             test["label"].to_numpy(),
             test["filepath"].to_numpy(),
             img_dir=img_dir,
-            transform=self.test_transformer
+            transform=self.transformer["test"],
         )
 
         return self.train_set, self.valid_set, self.test_set
@@ -329,8 +338,8 @@ class ReadHDF5:
     def create_data_loaders(
         self,
         batch_size: int,
-        img_dir: str|Path,
-        train_set : Dataset = None,
+        img_dir: str | Path,
+        train_set: Dataset = None,
         valid_set: Dataset = None,
         test_set: Dataset = None,
     ):
