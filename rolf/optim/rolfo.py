@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 from optuna import Trial, create_study
 from rich.pretty import pprint
+from torch.cuda import OutOfMemoryError
 
 from rolf.io.data import ReadHDF5
 from rolf.tools.toml_reader import ReadConfig
@@ -52,6 +53,10 @@ class ParameterOptimization:
             )
 
     def load_data(self, image_path: str | Path) -> None:
+        self.image_path = image_path
+        self._load_data()
+
+    def _load_data(self):
         self.data = ReadHDF5(
             self.data_path,
             validation_ratio=0.1,
@@ -63,7 +68,7 @@ class ParameterOptimization:
             self.val_loader,
             self.test_loader,
         ) = self.data.create_data_loaders(
-            batch_size=self.model_config["batch_size"], img_dir=image_path
+            batch_size=self.model_config["batch_size"], img_dir=self.image_path
         )
 
     def make_network(self, trial: Trial) -> None:
@@ -87,7 +92,7 @@ class ParameterOptimization:
             "weight_decay": use_tuning["weight_decay"],
         }
         if use_tuning["optimizer"] == "SGD":
-            optimizer_hparams["momentum"]
+            optimizer_hparams["momentum"] = use_tuning["momentum"]
 
         model_hparams = {}
         for key in ["hidden_channels", "block_groups", "block_name", "activation_name"]:
@@ -102,7 +107,31 @@ class ParameterOptimization:
         pprint(f"Optimizer '{use_tuning['optimizer']}' parameters:")
         pprint(optimizer_hparams)
 
-        self.model, self.result, _ = train_model(
+        result = None
+        while result is None:
+            try:
+                model, result = self._call_model(
+                    model_hparams, use_tuning, optimizer_hparams
+                )
+            except OutOfMemoryError as e:
+                pprint(e)
+                if self.model_config["batch_size"] > 10:
+                    self.model_config["batch_size"] -= 10
+                else:
+                    self.model_config["batch_size"] = int(
+                        self.model_config["batch_size"] / 2
+                    )
+                pprint(
+                    f"Reducing batch size to {self.model_config['batch_size']} "
+                    "and trying again..."
+                    ""
+                )
+                self._load_data()
+
+        self.score = result["val"]
+
+    def _call_model(self, model_hparams, use_tuning, optimizer_hparams) -> tuple:
+        model, result, _ = train_model(
             model_name=self.model_config["model_name"],
             train_loader=self.train_loader,
             val_loader=self.val_loader,
@@ -115,7 +144,7 @@ class ParameterOptimization:
             epochs=self.model_config["epochs"],
         )
 
-        self.score = self.result["val"]
+        return model, result
 
     def objective(self, trial: Trial) -> float:
         self.make_network(trial)
