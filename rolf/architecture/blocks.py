@@ -2,7 +2,7 @@ import torch.nn as nn
 
 
 class ResBlock(nn.Module):
-    def __init__(self, c_in, act_fn, subsample=False, c_out=-1):
+    def __init__(self, c_in, act_fn, subsample=False, c_out=-1, dropout=0.0):
         """Implementation of a ResBlock.
 
         Parameters
@@ -17,12 +17,15 @@ class ResBlock(nn.Module):
         c_out : int
             Number of output features. Only applies if
             subsample is True.
+        dropout: float
+            Dropout percentage.
         """
         super().__init__()
         if not subsample:
             c_out = c_in
 
         self.net = nn.Sequential(
+            nn.Dropout(dropout),
             nn.Conv2d(
                 c_in,
                 c_out,
@@ -34,7 +37,7 @@ class ResBlock(nn.Module):
             nn.BatchNorm2d(c_out),
             act_fn(),
             nn.Conv2d(c_out, c_out, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(c_out),
+            # nn.BatchNorm2d(c_out),
         )
 
         self.downsample = (
@@ -51,7 +54,7 @@ class ResBlock(nn.Module):
 
 
 class PreActBlock(nn.Module):
-    def __init__(self, c_in, act_fn, subsample=False, c_out=-1) -> None:
+    def __init__(self, c_in, act_fn, subsample=False, c_out=-1, dropout=0.0) -> None:
         """Implementation of a PreActBlock.
 
         Parameters
@@ -66,6 +69,8 @@ class PreActBlock(nn.Module):
         c_out : int
             Number of output features. Only applies if
             subsample is True.
+        dropout: float
+            Dropout percentage.
         """
         super().__init__()
 
@@ -73,8 +78,9 @@ class PreActBlock(nn.Module):
             c_out = c_in
 
         self.net = nn.Sequential(
-            nn.BatchNorm2d(c_in),
+            # nn.BatchNorm2d(c_in),
             act_fn(),
+            nn.Dropout(dropout),
             nn.Conv2d(
                 c_in,
                 c_out,
