@@ -1,4 +1,4 @@
-name: radio_ml
+name: rolf-dev
 channels:
   - conda-forge
   - pytorch
@@ -26,6 +26,11 @@ dependencies:
   - Pillow
   - h5py
   - pyside6
+  - pre-commit
+  - nbstripout
+  - black
+  - ruff
+  - nbqa
   - pip
   - pip:
     - jupyterlab-optuna
