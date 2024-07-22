@@ -13,6 +13,7 @@ from rolf.training.training import train_model
 def map_suggestions(trial, key):
     trial_suggest = {
         "hidden_channels": trial.suggest_categorical,
+        "num_groups": trial.suggest_int,
         "block_groups": trial.suggest_int,
         "block_name": trial.suggest_categorical,
         "activation_name": trial.suggest_categorical,
@@ -20,6 +21,7 @@ def map_suggestions(trial, key):
         "lr": trial.suggest_float,
         "momentum": trial.suggest_float,
         "weight_decay": trial.suggest_float,
+        "dropout": trial.suggest_float,
     }
 
     return trial_suggest[key]
@@ -32,13 +34,19 @@ class ParameterOptimization:
         optuna_path: str | Path,
         data_path: str | Path,
         random_state: int | np.random.RandomState = None,
+        validation_ratio: float = 0.1,
+        test_ratio: float = 0.05,
     ) -> None:
         self.optim_conf_path = Path(optim_conf_path)
         reader = ReadConfig(self.optim_conf_path)
+
         self.model_config = reader.training()
         self.tuning_config = reader.tuning()
         self.optuna_path = optuna_path
         self.data_path = Path(data_path)
+
+        self.validation_ratio = validation_ratio
+        self.test_ratio = test_ratio
 
         if random_state is None:
             self.random_state = np.random.mtrand.RandomState()
@@ -59,10 +67,11 @@ class ParameterOptimization:
     def _load_data(self):
         self.data = ReadHDF5(
             self.data_path,
-            validation_ratio=0.1,
-            test_ratio=0.05,
+            validation_ratio=self.validation_ratio,
+            test_ratio=self.test_ratio,
             random_state=self.random_state,
         )
+
         (
             self.train_loader,
             self.val_loader,
@@ -84,8 +93,12 @@ class ParameterOptimization:
                     key, self.tuning_config[key]
                 )
 
-        use_tuning["hidden_channels"] *= np.geomspace(1, 8, num=4, dtype=int)
-        use_tuning["block_groups"] = np.full(4, use_tuning["block_groups"])
+        use_tuning["hidden_channels"] *= 2 ** np.arange(use_tuning["num_groups"])
+        use_tuning["hidden_channels"] = use_tuning["hidden_channels"].tolist()
+
+        use_tuning["block_groups"] = np.full(
+            use_tuning["num_groups"], use_tuning["block_groups"]
+        ).tolist()
 
         optimizer_hparams = {
             "lr": use_tuning["lr"],
