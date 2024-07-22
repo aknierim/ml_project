@@ -72,6 +72,8 @@ class TrainModule(L.LightningModule):
 
     def configure_optimizers(self) -> tuple[list, list]:
         if self.hparams.optimizer_name in OPTIMIZERS:
+            if self.hparams.optimizer_name == "Adam":
+                self.hparams.optimizer_hparams.pop("momentum", None)
             optimizer = OPTIMIZERS[self.hparams.optimizer_name](
                 self.parameters(), **self.hparams.optimizer_hparams
             )
