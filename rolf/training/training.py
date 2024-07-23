@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
 from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint
+from sklearn.metrics import roc_auc_score
 
 from rolf.architecture import ResNet
 
@@ -51,8 +52,17 @@ class TrainModule(L.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
+        weights = torch.tensor(
+            [
+                4.35959595959596,
+                2.3354978354978355,
+                5.5191815856777495,
+                6.2011494252873565,
+            ]
+        )
         self.model = _create_model(model_name, model_hparams)
-        self.loss_module = nn.CrossEntropyLoss()
+        self.loss_module = nn.CrossEntropyLoss(weight=weights)
+        self.val_loss_module = nn.CrossEntropyLoss(weight=weights)
 
         # Example input for visualizing the graph in Tensorboard
         self.example_input_array = torch.zeros((1, 1, 300, 300))
@@ -62,6 +72,8 @@ class TrainModule(L.LightningModule):
 
     def configure_optimizers(self) -> tuple[list, list]:
         if self.hparams.optimizer_name in OPTIMIZERS:
+            if self.hparams.optimizer_name == "Adam":
+                self.hparams.optimizer_hparams.pop("momentum", None)
             optimizer = OPTIMIZERS[self.hparams.optimizer_name](
                 self.parameters(), **self.hparams.optimizer_hparams
             )
@@ -79,32 +91,60 @@ class TrainModule(L.LightningModule):
         return [optimizer], [scheduler]
 
     def training_step(self, batch, batch_idx):
-        """Log training accuracy and loss (per epoch by default)"""
+        """Log training roc auc and loss (per epoch by default)"""
         imgs, labels = batch
-        preds = self.model(imgs)
+        preds = self.model(imgs).softmax(dim=1)
         loss = self.loss_module(preds, labels)
-        acc = (preds.argmax(dim=-1) == labels).float().mean()
 
-        self.log("train_acc", acc, on_step=False, on_epoch=True)
+        roc_auc = roc_auc_score(
+            y_true=labels.cpu().detach().numpy(),
+            y_score=preds.cpu().detach().numpy(),
+            multi_class="ovo",
+            average="macro",
+            labels=[0, 1, 2, 3],
+        )
+        # roc_auc = MulticlassAUROC(num_classes=4, average="weighted", thresholds=None)
+
+        # self.log("train_roc_auc", roc_auc(preds, labels), on_step=False, on_epoch=True)
+        self.log("train_roc_auc", roc_auc, on_step=False, on_epoch=True)
         self.log("train_loss", loss)
 
         return loss
 
     def validation_step(self, batch, batch_idx) -> None:
-        """Log validation accuracy (per epoch by default)"""
+        """Log validation roc auc and loss (per epoch by default)"""
         imgs, labels = batch
-        preds = self.model(imgs).argmax(dim=-1)
-        acc = (labels == preds).float().mean()
+        preds = self.model(imgs).softmax(dim=1)
+        loss = self.val_loss_module(preds, labels)
 
-        self.log("val_acc", acc)
+        # roc_auc = MulticlassAUROC(num_classes=4, average="weighted", thresholds=None)
+        roc_auc = roc_auc_score(
+            y_true=labels.cpu().numpy(),
+            y_score=preds.cpu().numpy(),
+            multi_class="ovo",
+            average="macro",
+            labels=[0, 1, 2, 3],
+        )
+
+        # self.log("val_roc_auc", roc_auc(preds, labels), on_step=False, on_epoch=True)
+        self.log("val_roc_auc", roc_auc, on_step=False, on_epoch=True)
+        self.log("val_loss", loss)
 
     def test_step(self, batch, batch_idx) -> None:
-        """Log test accuracy (per epoch by default)"""
+        """Log test roc auc (per epoch by default)"""
         imgs, labels = batch
-        preds = self.model(imgs).argmax(dim=-1)
-        acc = (labels == preds).float().mean()
+        preds = self.model(imgs).softmax(dim=1)
+        # roc_auc = MulticlassAUROC(num_classes=4, average="weighted", thresholds=None)
+        roc_auc = roc_auc_score(
+            labels.cpu().detach().numpy(),
+            preds.cpu().detach().numpy(),
+            multi_class="ovo",
+            average="macro",
+            labels=[0, 1, 2, 3],
+        )
 
-        self.log("test_acc", acc)
+        # self.log("test_roc_auc", roc_auc(preds, labels), on_step=False, on_epoch=True)
+        self.log("test_roc_auc", roc_auc, on_step=False, on_epoch=True)
 
 
 def train_model(
@@ -124,7 +164,7 @@ def train_model(
     model_name : str
         Name of the model you want to run. Is used
         to look up the class in 'MODEL_DICT'
-    train_loader :
+    train_loader : DataLoader
     save_name : str, optional
         If specified, this name will be used
         for creating the checkpoint and logging directory.
@@ -141,7 +181,7 @@ def train_model(
         devices=1,
         max_epochs=epochs,
         callbacks=[
-            ModelCheckpoint(save_weights_only=True, mode="max", monitor="val_acc"),
+            ModelCheckpoint(save_weights_only=True, mode="max", monitor="val_roc_auc"),
             LearningRateMonitor("epoch"),
         ],
     )
@@ -164,7 +204,11 @@ def train_model(
 
     val_result = trainer.test(model, dataloaders=val_loader, verbose=False)
     test_result = trainer.test(model, dataloaders=test_loader, verbose=False)
-    result = {"test": test_result[0]["test_acc"], "val": val_result[0]["test_acc"]}
+
+    result = {
+        "test": test_result[0]["test_roc_auc"],
+        "val": val_result[0]["test_roc_auc"],
+    }
 
     return model, result, trainer
 

@@ -7,7 +7,7 @@ verbose = true
 gpu = true
 
 [meta]
-save_name = "resnet_tuning_j2_e90"
+save_name = "resnet_tuning_ROC_AUC_noBN_drop"
 batch_size = 200
 epochs = 90
 loss_func = "mse"
@@ -32,11 +32,13 @@ weight_decay = 1e-4
 
 
 [tuning]
-hidden_channels = [16, 32]
-block_groups = [1, 6, 1]
+hidden_channels = [4, 8, 16, 32]
+num_groups = [1, 4, 1]
+block_groups = [1, 4, 1]
 block_names = ["ResBlock", "PreActBlock"]
 activation_names = ["relu", "prelu", "mish"]
 optimizers = ["SGD", "Adam"]
-lr = [0.1, 0.8, 0.1]
+lr = [1e-9, 0.4]
 momentum = [0.1, 1.0, 0.1]
-weight_decay = [1e-7, 1e-2]
+weight_decay = [1e-8, 1e-1]
+dropout = [0.001, 0.9]

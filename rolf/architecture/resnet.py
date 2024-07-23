@@ -16,6 +16,7 @@ class ResNet(nn.Module):
         hidden_channels: list[int] = [16, 32, 64, 128],
         activation_name: str = "prelu",
         block_name: str = "ResBlock",
+        dropout: float = 0.0,
         **kwargs,
     ) -> None:
         """Residual net architecture.
@@ -59,6 +60,7 @@ class ResNet(nn.Module):
             "activation_name": activation_name,
             "activation": ACTIVATION[activation_name],
             "block_type": BLOCKS[block_name],
+            "dropout": dropout,
         }
 
         self._create_net()
@@ -88,6 +90,7 @@ class ResNet(nn.Module):
                         act_fn=self.hyperparams["activation"],
                         subsample=subsample,
                         c_out=hidden_channels[idx],
+                        dropout=self.hyperparams["dropout"],
                     )
                 )
 

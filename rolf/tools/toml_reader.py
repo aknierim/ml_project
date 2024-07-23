@@ -49,6 +49,11 @@ class ReadConfig:
         self.tuning_cfg["activation_name"] = self.tuning_toml["activation_names"]
         self.tuning_cfg["optimizer"] = self.tuning_toml["optimizers"]
         self.tuning_cfg["hidden_channels"] = self.tuning_toml["hidden_channels"]
+        self.tuning_cfg["num_groups"] = {
+            "low": self.tuning_toml["num_groups"][0],
+            "high": self.tuning_toml["num_groups"][1],
+            "step": self.tuning_toml["num_groups"][2],
+        }
         self.tuning_cfg["block_groups"] = {
             "low": self.tuning_toml["block_groups"][0],
             "high": self.tuning_toml["block_groups"][1],
@@ -57,7 +62,7 @@ class ReadConfig:
         self.tuning_cfg["lr"] = {
             "low": self.tuning_toml["lr"][0],
             "high": self.tuning_toml["lr"][1],
-            "step": self.tuning_toml["lr"][2],
+            "log": True,
         }
         self.tuning_cfg["momentum"] = {
             "low": self.tuning_toml["momentum"][0],
@@ -67,6 +72,11 @@ class ReadConfig:
         self.tuning_cfg["weight_decay"] = {
             "low": self.tuning_toml["weight_decay"][0],
             "high": self.tuning_toml["weight_decay"][1],
+            "log": True,
+        }
+        self.tuning_cfg["dropout"] = {
+            "low": self.tuning_toml["dropout"][0],
+            "high": self.tuning_toml["dropout"][1],
             "log": True,
         }
 
