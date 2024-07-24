@@ -34,6 +34,7 @@ class TrainModule(L.LightningModule):
         model_hparams: dict,
         optimizer_name: str,
         optimizer_hparams: dict,
+        class_weights: list = None,
     ) -> None:
         """Training Module
 
@@ -52,17 +53,9 @@ class TrainModule(L.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
-        weights = torch.tensor(
-            [
-                4.35959595959596,
-                2.3354978354978355,
-                5.5191815856777495,
-                6.2011494252873565,
-            ]
-        )
         self.model = _create_model(model_name, model_hparams)
-        self.loss_module = nn.CrossEntropyLoss(weight=weights)
-        self.val_loss_module = nn.CrossEntropyLoss(weight=weights)
+        self.loss_module = nn.CrossEntropyLoss(weight=class_weights)
+        self.val_loss_module = nn.CrossEntropyLoss()
 
         # Example input for visualizing the graph in Tensorboard
         self.example_input_array = torch.zeros((1, 1, 300, 300))
@@ -155,6 +148,7 @@ def train_model(
     checkpoint_path: str | Path,
     save_name: str | Path = "",
     epochs: int = 300,
+    class_weights: list = None,
     **kwargs,
 ):
     """Train the model passed via 'model_name'.
@@ -196,7 +190,9 @@ def train_model(
         model = TrainModule.load_from_checkpoint(pretrained_filename)
     else:
         L.seed_everything(42)
-        model = TrainModule(model_name=model_name, **kwargs)
+        model = TrainModule(
+            model_name=model_name, class_weights=class_weights, **kwargs
+        )
         trainer.fit(model, train_loader, val_loader)
         model = TrainModule.load_from_checkpoint(
             trainer.checkpoint_callback.best_model_path
