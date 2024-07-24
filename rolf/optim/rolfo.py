@@ -141,7 +141,7 @@ class ParameterOptimization:
                 )
                 self._load_data()
 
-        self.score = result["val"]
+        self.score = (result["val"]["auc"], result["val"]["acc"])
 
     def _call_model(self, model_hparams, use_tuning, optimizer_hparams) -> tuple:
         model, result, _ = train_model(
@@ -164,14 +164,15 @@ class ParameterOptimization:
         return self.score
 
     def optimize(
-        self, study_name: str, direction: str, n_trials: int, n_jobs: int
+        self, study_name: str, direction: str | list, n_trials: int, n_jobs: int
     ) -> None:
         self.study = create_study(
             study_name=study_name,
-            direction=direction,
+            directions=direction,
             storage=self.optuna_path,
             load_if_exists=True,
         )
+        self.study.set_metric_names(["ROC AUC", "Accuracy"])
         self.study.optimize(
             lambda trial: self.objective(trial),
             n_trials=n_trials,
