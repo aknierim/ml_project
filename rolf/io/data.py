@@ -344,7 +344,7 @@ class ReadHDF5:
         train_loader = DataLoader(
             train_set,
             batch_size=batch_size,
-            shuffle=True,
+            shuffle=True if sampler is None else False,
             drop_last=True,
             pin_memory=True,
             num_workers=4,
