@@ -11,9 +11,7 @@ import torch
 from astropy.table import QTable
 from joblib import Parallel, delayed
 from rich.progress import Progress, track
-from sklearn.model_selection import train_test_split
-from torch import FloatTensor
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler, random_split
 from torchvision.io import read_image
 from torchvision.transforms import v2 as transforms
 
@@ -114,7 +112,7 @@ class CreateTorchDataset(Dataset):
         if self.target_transform:
             label = self.target_transform(label)
 
-        return image.type(FloatTensor), label
+        return image.type(torch.FloatTensor), label
 
 
 class ReadHDF5:
@@ -229,30 +227,17 @@ class ReadHDF5:
         X = data["filepath"]
         y = data["label"]
 
-        indices = np.arange(len(y))
+        valid_count = int(len(y) * self.validation_ratio)
+        test_count = int(len(y) * self.test_ratio)
+        train_count = len(y) - valid_count - test_count
 
-        X_temp, _, y_temp, _, temp_idx, test_idx = train_test_split(
-            X,
-            y,
-            indices,
-            test_size=self.test_ratio,
-            shuffle=True,
-            random_state=self.random_state,
-        )
-        _, _, _, _, train_idx, valid_idx = train_test_split(
-            X_temp,
-            y_temp,
-            temp_idx,
-            test_size=self.validation_ratio,
-            shuffle=True,
-            random_state=self.random_state,
-        )
+        train, valid, test = random_split(X, [train_count, valid_count, test_count])
 
-        idx = np.concatenate((train_idx, valid_idx, test_idx))
+        idx = np.concatenate((train.indices, valid.indices, test.indices))
 
-        train_splits = np.full_like(train_idx, "train", dtype="<U5")
-        valid_splits = np.full_like(valid_idx, "valid", dtype="<U5")
-        test_splits = np.full_like(test_idx, "test", dtype="<U5")
+        train_splits = np.full_like(train.indices, "train", dtype="<U5")
+        valid_splits = np.full_like(valid.indices, "valid", dtype="<U5")
+        test_splits = np.full_like(test.indices, "test", dtype="<U5")
 
         split = np.concatenate((train_splits, valid_splits, test_splits))
 
@@ -298,7 +283,7 @@ class ReadHDF5:
     def create_torch_datasets(
         self,
         img_dir: str | Path,
-        transform: dict = {},
+        transform=None,
         target_transform=None,
     ) -> tuple:
         data = self.get_labels_and_paths()
@@ -307,30 +292,27 @@ class ReadHDF5:
         valid = data[data["split"] == "valid"]
         test = data[data["split"] == "test"]
 
-        if len(transform.keys()) != 0:
-            for key in self.data_keys:
-                try:
-                    self.transformer[key] = transform[key]
-                except KeyError:
-                    continue
+        class_sample_count = np.unique(train["label"], return_counts=True)[1]
+        self.train_weight = 1.0 / class_sample_count
+        samples_weight = np.array([self.train_weight[t] for t in train["label"]])
+        samples_weight = torch.from_numpy(samples_weight)
+
+        self.sampler = WeightedRandomSampler(
+            samples_weight.type("torch.DoubleTensor"), len(samples_weight)
+        )
 
         self.train_set = CreateTorchDataset(
             train["label"].to_numpy(),
             train["filepath"].to_numpy(),
             img_dir=img_dir,
-            transform=self.transformer["train"],
         )
         self.valid_set = CreateTorchDataset(
             valid["label"].to_numpy(),
             valid["filepath"].to_numpy(),
             img_dir=img_dir,
-            transform=self.transformer["valid"],
         )
         self.test_set = CreateTorchDataset(
-            test["label"].to_numpy(),
-            test["filepath"].to_numpy(),
-            img_dir=img_dir,
-            transform=self.transformer["test"],
+            test["label"].to_numpy(), test["filepath"].to_numpy(), img_dir=img_dir
         )
 
         return self.train_set, self.valid_set, self.test_set
@@ -342,6 +324,7 @@ class ReadHDF5:
         train_set: Dataset = None,
         valid_set: Dataset = None,
         test_set: Dataset = None,
+        sampler: torch.utils.data.sampler.Sampler = None,
     ):
         try:
             train_set = self.train_set
@@ -353,6 +336,11 @@ class ReadHDF5:
         if None in (train_set, valid_set, test_set):
             train_set, valid_set, test_set = self.create_torch_datasets(img_dir)
 
+        try:
+            sampler = self.sampler
+        except AttributeError:
+            pass
+
         train_loader = DataLoader(
             train_set,
             batch_size=batch_size,
@@ -360,6 +348,7 @@ class ReadHDF5:
             drop_last=True,
             pin_memory=True,
             num_workers=4,
+            sampler=sampler,
         )
         valid_loader = DataLoader(
             valid_set,
