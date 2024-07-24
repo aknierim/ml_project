@@ -1,12 +1,13 @@
 from pathlib import Path
 
 import lightning as L
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
 from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import accuracy_score, roc_auc_score
 
 from rolf.architecture import ResNet
 
@@ -34,6 +35,7 @@ class TrainModule(L.LightningModule):
         model_hparams: dict,
         optimizer_name: str,
         optimizer_hparams: dict,
+        class_weights: list = None,
     ) -> None:
         """Training Module
 
@@ -52,17 +54,9 @@ class TrainModule(L.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
-        weights = torch.tensor(
-            [
-                4.35959595959596,
-                2.3354978354978355,
-                5.5191815856777495,
-                6.2011494252873565,
-            ]
-        )
         self.model = _create_model(model_name, model_hparams)
-        self.loss_module = nn.CrossEntropyLoss(weight=weights)
-        self.val_loss_module = nn.CrossEntropyLoss(weight=weights)
+        self.loss_module = nn.CrossEntropyLoss(weight=class_weights)
+        self.val_loss_module = nn.CrossEntropyLoss()
 
         # Example input for visualizing the graph in Tensorboard
         self.example_input_array = torch.zeros((1, 1, 300, 300))
@@ -103,10 +97,14 @@ class TrainModule(L.LightningModule):
             average="macro",
             labels=[0, 1, 2, 3],
         )
-        # roc_auc = MulticlassAUROC(num_classes=4, average="weighted", thresholds=None)
 
-        # self.log("train_roc_auc", roc_auc(preds, labels), on_step=False, on_epoch=True)
+        acc = accuracy_score(
+            labels.cpu().detach().numpy(),
+            np.argmax(preds.cpu().detach().numpy(), axis=1),
+        )
+
         self.log("train_roc_auc", roc_auc, on_step=False, on_epoch=True)
+        self.log("train_acc", acc, on_step=False, on_epoch=True)
         self.log("train_loss", loss)
 
         return loss
@@ -117,7 +115,6 @@ class TrainModule(L.LightningModule):
         preds = self.model(imgs).softmax(dim=1)
         loss = self.val_loss_module(preds, labels)
 
-        # roc_auc = MulticlassAUROC(num_classes=4, average="weighted", thresholds=None)
         roc_auc = roc_auc_score(
             y_true=labels.cpu().numpy(),
             y_score=preds.cpu().numpy(),
@@ -126,15 +123,20 @@ class TrainModule(L.LightningModule):
             labels=[0, 1, 2, 3],
         )
 
-        # self.log("val_roc_auc", roc_auc(preds, labels), on_step=False, on_epoch=True)
+        acc = accuracy_score(
+            labels.cpu().detach().numpy(),
+            np.argmax(preds.cpu().detach().numpy(), axis=1),
+        )
+
         self.log("val_roc_auc", roc_auc, on_step=False, on_epoch=True)
+        self.log("val_acc", acc, on_step=False, on_epoch=True)
         self.log("val_loss", loss)
 
     def test_step(self, batch, batch_idx) -> None:
         """Log test roc auc (per epoch by default)"""
         imgs, labels = batch
         preds = self.model(imgs).softmax(dim=1)
-        # roc_auc = MulticlassAUROC(num_classes=4, average="weighted", thresholds=None)
+
         roc_auc = roc_auc_score(
             labels.cpu().detach().numpy(),
             preds.cpu().detach().numpy(),
@@ -143,8 +145,13 @@ class TrainModule(L.LightningModule):
             labels=[0, 1, 2, 3],
         )
 
-        # self.log("test_roc_auc", roc_auc(preds, labels), on_step=False, on_epoch=True)
+        acc = accuracy_score(
+            labels.cpu().detach().numpy(),
+            np.argmax(preds.cpu().detach().numpy(), axis=1),
+        )
+
         self.log("test_roc_auc", roc_auc, on_step=False, on_epoch=True)
+        self.log("test_acc", acc, on_step=False, on_epoch=True)
 
 
 def train_model(
@@ -155,6 +162,7 @@ def train_model(
     checkpoint_path: str | Path,
     save_name: str | Path = "",
     epochs: int = 300,
+    class_weights: list = None,
     **kwargs,
 ):
     """Train the model passed via 'model_name'.
@@ -196,7 +204,9 @@ def train_model(
         model = TrainModule.load_from_checkpoint(pretrained_filename)
     else:
         L.seed_everything(42)
-        model = TrainModule(model_name=model_name, **kwargs)
+        model = TrainModule(
+            model_name=model_name, class_weights=class_weights, **kwargs
+        )
         trainer.fit(model, train_loader, val_loader)
         model = TrainModule.load_from_checkpoint(
             trainer.checkpoint_callback.best_model_path
@@ -206,8 +216,11 @@ def train_model(
     test_result = trainer.test(model, dataloaders=test_loader, verbose=False)
 
     result = {
-        "test": test_result[0]["test_roc_auc"],
-        "val": val_result[0]["test_roc_auc"],
+        "test": {
+            "auc": test_result[0]["test_roc_auc"],
+            "acc": test_result[0]["test_acc"],
+        },
+        "val": {"auc": val_result[0]["test_roc_auc"], "acc": val_result[0]["test_acc"]},
     }
 
     return model, result, trainer
