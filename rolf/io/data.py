@@ -223,7 +223,7 @@ class ReadHDF5:
 
         return df
 
-    def _get_splits(self, data):
+    def _get_splits(self, data, use_img_array=False):
         X = data["filepath"]
         y = data["label"]
 
@@ -283,7 +283,7 @@ class ReadHDF5:
     def create_torch_datasets(
         self,
         img_dir: str | Path,
-        transform=None,
+        transform={},
         target_transform=None,
     ) -> tuple:
         data = self.get_labels_and_paths()
@@ -301,18 +301,34 @@ class ReadHDF5:
             samples_weight.type("torch.DoubleTensor"), len(samples_weight)
         )
 
+        if len(transform.keys()) != 0:
+            for key in self.data_keys:
+                try:
+                    self.transformer[key] = transform[key]
+                except KeyError:
+                    continue
+
+        train_imgs = train["filepath"].to_numpy()
+        valid_imgs = valid["filepath"].to_numpy()
+        test_imgs = test["filepath"].to_numpy()
+
         self.train_set = CreateTorchDataset(
             train["label"].to_numpy(),
-            train["filepath"].to_numpy(),
+            train_imgs,
             img_dir=img_dir,
+            transform=self.transformer["train"],
         )
         self.valid_set = CreateTorchDataset(
             valid["label"].to_numpy(),
-            valid["filepath"].to_numpy(),
+            valid_imgs,
             img_dir=img_dir,
+            transform=self.transformer["valid"],
         )
         self.test_set = CreateTorchDataset(
-            test["label"].to_numpy(), test["filepath"].to_numpy(), img_dir=img_dir
+            test["label"].to_numpy(),
+            test_imgs,
+            img_dir=img_dir,
+            transform=self.transformer["test"],
         )
 
         return self.train_set, self.valid_set, self.test_set
@@ -366,3 +382,37 @@ class ReadHDF5:
         )
 
         return train_loader, valid_loader, test_loader
+
+    def create_rf_data(
+        self,
+        img_dir: str | Path,
+        train_set: Dataset = None,
+        valid_set: Dataset = None,
+        test_set: Dataset = None,
+        sampler: torch.utils.data.sampler.Sampler = None,
+    ):
+        train, valid, test = self.create_data_loaders(
+            batch_size=10,
+            img_dir=img_dir,
+            train_set=train_set,
+            valid_set=valid_set,
+            test_set=test_set,
+            sampler=sampler,
+        )
+
+        train = list(iter(train))
+        valid = list(iter(valid))
+        test = list(iter(test))
+
+        X_train = np.concatenate([train[i][0] for i in range(len(train))])
+        X_valid = np.concatenate([valid[i][0] for i in range(len(valid))])
+        X_test = np.concatenate([test[i][0] for i in range(len(test))])
+        y_train = np.concatenate([train[i][1] for i in range(len(train))])
+        y_valid = np.concatenate([valid[i][1] for i in range(len(valid))])
+        y_test = np.concatenate([test[i][1] for i in range(len(test))])
+
+        X_train = X_train.reshape((X_train.shape[0], np.prod(X_train.shape[1:])))
+        X_valid = X_valid.reshape((X_valid.shape[0], np.prod(X_valid.shape[1:])))
+        X_test = X_test.reshape((X_test.shape[0], np.prod(X_test.shape[1:])))
+
+        return X_train, X_valid, X_test, y_train, y_valid, y_test
