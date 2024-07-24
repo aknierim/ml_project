@@ -116,8 +116,8 @@ class TrainModule(L.LightningModule):
         loss = self.val_loss_module(preds, labels)
 
         roc_auc = roc_auc_score(
-            y_true=labels.cpu().numpy(),
-            y_score=preds.cpu().numpy(),
+            y_true=labels.cpu().detach().numpy(),
+            y_score=preds.cpu().detach().numpy(),
             multi_class="ovo",
             average="macro",
             labels=[0, 1, 2, 3],
