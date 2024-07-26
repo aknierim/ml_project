@@ -36,6 +36,7 @@ class ParameterOptimization:
         random_state: int | np.random.RandomState = None,
         validation_ratio: float = 0.1,
         test_ratio: float = 0.05,
+        devices=1,
     ) -> None:
         self.optim_conf_path = Path(optim_conf_path)
         reader = ReadConfig(self.optim_conf_path)
@@ -71,6 +72,7 @@ class ParameterOptimization:
             test_ratio=self.test_ratio,
             random_state=self.random_state,
         )
+        self.data.make_transformer()
 
         (
             self.train_loader,
@@ -155,6 +157,7 @@ class ParameterOptimization:
             optimizer_name=use_tuning["optimizer"],
             optimizer_hparams=optimizer_hparams,
             epochs=self.model_config["epochs"],
+            devices=self.devices,
         )
 
         return model, result
