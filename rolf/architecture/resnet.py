@@ -38,14 +38,11 @@ class ResNet(nn.Module):
             Format: 'activation_name': nn.modules.activation
         block_name : str, optional
             Name of the ResNet Block.
-        available_blocks : dict, optional
-            Dictionary of available blocks.
-            Format: 'block_name': block_object
         """
         super().__init__()
 
         if block_name not in BLOCKS.keys():
-            raise ValueError(f"No block '{block_name}' in block_name!")
+            raise ValueError(f"No block '{block_name}' in BLOCKS!")
 
         if activation_name not in ACTIVATION.keys():
             raise ValueError(
