@@ -45,7 +45,7 @@ class ResNet(nn.Module):
         super().__init__()
 
         if block_name not in BLOCKS.keys():
-            raise ValueError(f"No block '{block_name}' in available_blocks!")
+            raise ValueError(f"No block '{block_name}' in block_name!")
 
         if activation_name not in ACTIVATION.keys():
             raise ValueError(
