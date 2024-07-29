@@ -42,12 +42,12 @@ class ResNet(nn.Module):
         super().__init__()
 
         if block_name not in BLOCKS.keys():
-            raise ValueError(f"No block '{block_name}' in BLOCKS!")
+            raise ValueError(f"No block '{block_name}' in BLOCKS dict!")
 
         if activation_name not in ACTIVATION.keys():
             raise ValueError(
                 f"No activation function named '{activation_name}' "
-                "in available_activation!"
+                "in ACTIVATION dict!"
             )
 
         self.hyperparams = {
