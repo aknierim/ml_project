@@ -37,7 +37,7 @@ dependencies = [
 
 [project.scripts]
 rolf-info = "rolf.info:main"
-rolf-train = "rolf.tools.train:main"
+rolf-train = "rolf.tools.start_training:main"
 rolf-data = "rolf.tools.get_data:main"
 rolf-view = "rolf.io.viewer:main"
 rolf-unpack = "rolf.io.unpack:main"
