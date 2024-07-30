@@ -9,7 +9,7 @@ gpu = true
 [meta]
 save_name = "ROLF_ResNet"
 batch_size = 55
-epochs = 1
+epochs = 300
 loss_func = "mse"
 
 [model]
