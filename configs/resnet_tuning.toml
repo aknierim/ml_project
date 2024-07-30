@@ -7,9 +7,9 @@ verbose = true
 gpu = true
 
 [meta]
-save_name = "resnet_AUC_ACC"
+save_name = "resnet_AUC_ACC_fast"
 batch_size = 150
-epochs = 90
+epochs = 30
 loss_func = "mse"
 
 [model]
@@ -38,7 +38,7 @@ block_groups = [1, 4, 1]
 block_names = ["ResBlock", "PreActBlock"]
 activation_names = ["relu", "prelu", "mish"]
 optimizers = ["SGD", "Adam"]
-lr = [1e-9, 0.4]
-momentum = [0.1, 1.0, 0.1]
-weight_decay = [1e-8, 1e-1]
-dropout = [0.001, 0.9]
+lr = [1e-7, 0.5]
+momentum = [0.01, 1.0, 0.01]
+weight_decay = [1e-8, 0.5]
+dropout = [1e-5, 0.9]
