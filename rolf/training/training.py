@@ -36,6 +36,8 @@ class TrainModule(L.LightningModule):
         optimizer_name: str,
         optimizer_hparams: dict,
         class_weights: list = None,
+        epochs: int = 100,
+        lr_scheduler: str = "multi",
     ) -> None:
         """Training Module
 
@@ -58,6 +60,9 @@ class TrainModule(L.LightningModule):
         self.loss_module = nn.CrossEntropyLoss(weight=class_weights)
         self.val_loss_module = nn.CrossEntropyLoss()
 
+        self.epochs = epochs
+        self.lr_scheduler = lr_scheduler
+
         # Example input for visualizing the graph in Tensorboard
         self.example_input_array = torch.zeros((1, 1, 300, 300))
 
@@ -78,10 +83,109 @@ class TrainModule(L.LightningModule):
                 f"Available optimizers are: {avail_opt}"
             )
 
-        # Reduce the learning rate by 0.1 after 100 and 150 epochs
-        scheduler = optim.lr_scheduler.MultiStepLR(
-            optimizer, milestones=[100, 150], gamma=0.1
-        )
+        if self.lr_scheduler == "multi":
+            # Reduce the learning rate by 0.1 after 100 and 150, ... epochs
+            scheduler = optim.lr_scheduler.MultiStepLR(
+                optimizer, milestones=[100, 150, 200, 250], gamma=0.1
+            )
+        elif self.lr_scheduler == "combined_cos":
+            sched_1 = optim.lr_scheduler.CosineAnnealingLR(
+                optimizer,
+                T_max=int(self.epochs * 0.3),
+                eta_min=0,
+                last_epoch=-1,
+            )
+            sched_2 = optim.lr_scheduler.CosineAnnealingLR(
+                optimizer,
+                T_max=self.epochs,
+                eta_min=0,
+                last_epoch=-1,
+            )
+            scheduler = optim.lr_scheduler.ChainedScheduler([sched_1, sched_2])
+
+        elif self.lr_scheduler == "cos":
+            scheduler = optim.lr_scheduler.CosineAnnealingLR(
+                optimizer,
+                T_max=self.epochs,
+                eta_min=0,
+                last_epoch=-1,
+            )
+
+        elif self.lr_scheduler == "combined_cos_2":
+
+            def _cos(start, epoch, end):
+                return start + (1 + np.cos(np.pi * (1 - epoch))) * (end - start) / 2
+
+            mid = int(self.epochs * 0.3)
+
+            lambda1 = lambda epoch: _cos(0, epoch, mid)  # noqa: E731
+            lambda2 = lambda epoch: _cos(mid, epoch, self.epochs)  # noqa: E731
+
+            sched_1 = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
+            sched_2 = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda2)
+            scheduler = optim.lr_scheduler.SequentialLR(
+                optimizer, schedulers=[sched_1, sched_2], milestones=[100]
+            )
+
+        elif self.lr_scheduler == "cos_warm":
+            scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+                optimizer, int(self.epochs * 0.08)
+            )
+
+        elif self.lr_scheduler == "plateau":
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min")
+
+        elif self.lr_scheduler == "cyclic":
+            scheduler = optim.lr_scheduler.CyclicLR(
+                optimizer,
+                base_lr=0.5 * self.hparams.optimizer_hparams["lr"],
+                max_lr=self.hparams.optimizer_hparams["lr"],
+                mode="exp_range",
+                gamma=0.25,
+                step_size_up=150,
+            )
+
+        elif self.lr_scheduler == "multistep_cyclic":
+            sched_1 = optim.lr_scheduler.CyclicLR(
+                optimizer,
+                base_lr=0.15 * self.hparams.optimizer_hparams["lr"],
+                max_lr=self.hparams.optimizer_hparams["lr"],
+                mode="exp_range",
+                gamma=0.25,
+                step_size_up=100,
+            )
+            sched_2 = optim.lr_scheduler.MultiStepLR(
+                optimizer, milestones=[50, 136, 181, 231], gamma=0.1
+            )
+            scheduler = optim.lr_scheduler.SequentialLR(
+                optimizer, [sched_1, sched_2], milestones=[50]
+            )
+
+        elif self.lr_scheduler == "one_cycle":
+            scheduler = torch.optim.lr_scheduler.OneCycleLR(
+                optimizer,
+                max_lr=self.hparams.optimizer_hparams["lr"],
+                epochs=300,
+                steps_per_epoch=1,
+            )
+
+        elif self.lr_scheduler == "one_cycle_multistep":
+            mid = 60
+            s1 = optim.lr_scheduler.OneCycleLR(
+                optimizer,
+                max_lr=self.hparams.optimizer_hparams["lr"],
+                epochs=67,
+                steps_per_epoch=1,
+            )
+            s2 = optim.lr_scheduler.MultiStepLR(
+                optimizer, milestones=[mid, 100, 150, 200, 250], gamma=0.5
+            )
+            # s1 = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9, last_epoch=-1)
+            # s1 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200, last_epoch=360)
+            scheduler = torch.optim.lr_scheduler.SequentialLR(
+                optimizer, schedulers=[s1, s2], milestones=[mid]
+            )
+
         return [optimizer], [scheduler]
 
     def training_step(self, batch, batch_idx):
@@ -163,6 +267,8 @@ def train_model(
     save_name: str | Path = "",
     epochs: int = 300,
     class_weights: list = None,
+    devices: int = 1,
+    lr_scheduler: str = "multi",
     **kwargs,
 ):
     """Train the model passed via 'model_name'.
@@ -186,10 +292,13 @@ def train_model(
     trainer = L.Trainer(
         default_root_dir=Path(checkpoint_path / save_name),
         accelerator="auto",
-        devices=1,
+        devices=devices,
         max_epochs=epochs,
         callbacks=[
             ModelCheckpoint(save_weights_only=True, mode="max", monitor="val_roc_auc"),
+            ModelCheckpoint(
+                save_weights_only=True, monitor="val_roc_auc", save_last=True
+            ),
             LearningRateMonitor("epoch"),
         ],
     )
@@ -205,7 +314,11 @@ def train_model(
     else:
         L.seed_everything(42)
         model = TrainModule(
-            model_name=model_name, class_weights=class_weights, **kwargs
+            model_name=model_name,
+            class_weights=class_weights,
+            epochs=epochs,
+            lr_scheduler=lr_scheduler,
+            **kwargs,
         )
         trainer.fit(model, train_loader, val_loader)
         model = TrainModule.load_from_checkpoint(
@@ -224,7 +337,3 @@ def train_model(
     }
 
     return model, result, trainer
-
-
-def main() -> None:
-    pass

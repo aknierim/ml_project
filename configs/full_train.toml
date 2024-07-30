@@ -1,0 +1,32 @@
+[paths]
+data = "../data/galaxy_data/all"
+model = "../build/checkpoints/"
+
+[mode]
+verbose = true
+gpu = true
+
+[meta]
+save_name = "ResNet_tr15"
+batch_size = 58
+epochs = 300
+loss_func = "mse"
+
+[model]
+name = "ResNet"
+
+[net_hyperparams]
+num_classes = 4
+hidden_channels = [32, 64, 128]
+block_groups = [3, 3, 3]
+block_name = "PreActBlock"
+activation_name = "prelu"
+dropout = 0.00514522464263313
+
+[optimizer]
+name = "Adam"
+
+[optimizer_hyperparams]
+lr = 0.00026173639920195935
+momentum = -1 # not necessary for Adam, hence set to -1
+weight_decay = 2.565368866725289e-05
