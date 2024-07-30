@@ -7,9 +7,9 @@ verbose = true
 gpu = true
 
 [meta]
-save_name = "resnet_AUC_ACC_fast"
+save_name = "resnet_AUC_ACC"
 batch_size = 150
-epochs = 30
+epochs = 90
 loss_func = "mse"
 
 [model]
