@@ -48,7 +48,7 @@ dev = ["pre-commit", "setuptools_scm[toml]"]
 all = ["rolf[dev]"]
 
 [project.urls]
-repository = "https://github.com/aknierim/ml_project"
+repository = "https://github.com/aknierim/rolf"
 
 [tool.setuptools_scm]
 write_to = "rolf/_version.py"
