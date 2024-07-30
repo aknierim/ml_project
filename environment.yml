@@ -17,6 +17,7 @@ dependencies:
   - pytorch-cuda=12.1=ha16c6d3_5
   - lightning
   - ipywidgets
+  - click
   - joblib
   - jupyter
   - jupyterlab
