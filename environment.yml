@@ -1,4 +1,4 @@
-name: radio_ml
+name: rolf
 channels:
   - conda-forge
   - pytorch
