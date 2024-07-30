@@ -12,7 +12,7 @@ from sklearn.metrics import accuracy_score, roc_auc_score
 
 from rolf.architecture import ResNet
 
-MODEL_DICT = {"ResNet": ResNet}
+MODEL_DICT = {"ResNet": ResNet}  # Expandable
 
 OPTIMIZERS = {"Adam": optim.AdamW, "SGD": optim.SGD}
 
@@ -38,14 +38,14 @@ class TrainModule(L.LightningModule):
         optimizer_hparams: dict,
         class_weights: list = None,
         epochs: int = 100,
-        lr_scheduler: str = "multi",
+        lr_scheduler: str = "cyclic",
     ) -> None:
         """Training Module
 
         Parameters
         ----------
         model_name : str
-            Name of the model/CNN to run. Used for creating the model.
+            Name of the model to run. Used for creating the model.
         model_hparams : dict
             Dictionary of hyperparameters for the model.
         optimizer_name : str

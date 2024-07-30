@@ -1,6 +1,7 @@
 """Main architecture of this project, following the ResNet architecture."""
 
 import torch.nn as nn
+from numpy.typing import ArrayLike
 
 from .blocks import PreActBlock, ResBlock
 
@@ -9,6 +10,8 @@ ACTIVATION = {"prelu": nn.PReLU, "relu": nn.ReLU, "mish": nn.Mish}
 
 
 class ResNet(nn.Module):
+    """Architecture of the ResNet model."""
+
     def __init__(
         self,
         num_classes: int = 4,
@@ -64,6 +67,9 @@ class ResNet(nn.Module):
         self._init_params()
 
     def _create_net(self):
+        """Creates the neural network architecture from the
+        given parameters in the __init__.
+        """
         hidden_channels = self.hyperparams["hidden_channels"]
 
         if self.hyperparams["block_type"] == PreActBlock:
@@ -80,7 +86,7 @@ class ResNet(nn.Module):
         blocks = []
         for idx, group in enumerate(self.hyperparams["block_groups"]):
             for block in range(group):
-                subsample = block == 0 and idx > 0
+                subsample: bool = block == 0 and idx > 0
                 blocks.append(
                     self.hyperparams["block_type"](
                         c_in=hidden_channels[idx if not subsample else (idx - 1)],
@@ -100,6 +106,7 @@ class ResNet(nn.Module):
         )
 
     def _init_params(self):
+        """Initializes parameters using a Kaiming normal distribution."""
         for module in self.modules():
             if isinstance(module, nn.Conv2d):
                 nn.init.kaiming_normal_(
@@ -110,7 +117,19 @@ class ResNet(nn.Module):
                 nn.init.constant_(module.weight, 1)
                 nn.init.constant_(module.bias, 0)
 
-    def forward(self, x):
+    def forward(self, x: ArrayLike) -> ArrayLike:
+        """Forward feed for the network.
+
+        Parameters
+        ----------
+        x : array_like
+            Input images.
+
+        Returns
+        -------
+        x : array_like
+            Class probabilities.
+        """
         x = self.input(x)
         x = self.blocks(x)
         x = self.output(x)

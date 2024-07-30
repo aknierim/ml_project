@@ -10,7 +10,22 @@ from rolf.tools.toml_reader import ReadConfig
 from rolf.training.training import train_model
 
 
-def map_suggestions(trial, key):
+def map_suggestions(trial: Trial, key: str):
+    """Lookup dictionary of hyperparamters and
+    trial suggestions.
+
+    Parameters
+    ----------
+    trial : Trial
+        Optuna trial instance.
+    key : str
+        Key for the hyperparamter.
+
+    Returns
+    -------
+    mapping
+        Mapping of the respective key and trial.
+    """
     trial_suggest = {
         "hidden_channels": trial.suggest_categorical,
         "num_groups": trial.suggest_int,
@@ -28,6 +43,8 @@ def map_suggestions(trial, key):
 
 
 class ParameterOptimization:
+    """Main hyperparamter optimization class."""
+
     def __init__(
         self,
         optim_conf_path: str | Path,
@@ -36,8 +53,28 @@ class ParameterOptimization:
         random_state: int | np.random.RandomState = None,
         validation_ratio: float = 0.1,
         test_ratio: float = 0.05,
-        devices=1,
+        devices: int | list = 1,
     ) -> None:
+        """Initializes the hyperparamter optimization.
+
+        Parameters
+        ----------
+        optim_conf_path : str or Path
+            Path of the optimization config file.
+        optuna_path : str or Path
+            Optuna study output path. Saves to a sqlite database.
+        data_path : str or Path
+            Path to the data files.
+        random_state : int or np.random.RandomState
+            Seed for the data loaders.
+        validation_ratio : float
+            Validation ratio for the data split.
+        test_ratio : float
+            Test ratio for the data split.
+        devices : int or list
+            Number of devices or list of specific device
+            IDs.
+        """
         self.optim_conf_path = Path(optim_conf_path)
         reader = ReadConfig(self.optim_conf_path)
 
@@ -62,10 +99,18 @@ class ParameterOptimization:
             )
 
     def load_data(self, image_path: str | Path) -> None:
+        """Primes image path, loads data.
+
+        Parameters
+        ----------
+        image_path : str or Path
+            Path to the images.
+        """
         self.image_path = image_path
         self._load_data()
 
     def _load_data(self):
+        """Main data loader method"""
         self.data = ReadHDF5(
             self.data_path,
             validation_ratio=self.validation_ratio,
@@ -83,6 +128,13 @@ class ParameterOptimization:
         )
 
     def make_network(self, trial: Trial) -> None:
+        """Creates network for the current trial.
+
+        Parameters
+        ----------
+        trial : Trial
+            Current trial.
+        """
         use_tuning = {}
 
         for key in self.tuning_config:
@@ -145,7 +197,27 @@ class ParameterOptimization:
 
         self.score = (result["val"]["auc"], result["val"]["acc"])
 
-    def _call_model(self, model_hparams, use_tuning, optimizer_hparams) -> tuple:
+    def _call_model(
+        self, model_hparams: dict, use_tuning: dict, optimizer_hparams: dict
+    ) -> tuple:
+        """Calls model with current parameter set.
+
+        Parameters
+        ----------
+        model_hparams : dict
+            Dictionary of model hyperparamters.
+        use_tuning : dict
+            Dictionary of tuning hyperparamters.
+        optimizer_hparams : dict
+            Dictionary of optimizer hyperparamters.
+
+        Returns
+        -------
+        model
+            Trained model instance.
+        result : dict
+            Dictionary of the results.
+        """
         model, result, _ = train_model(
             model_name=self.model_config["model_name"],
             train_loader=self.train_loader,
@@ -163,12 +235,38 @@ class ParameterOptimization:
         return model, result
 
     def objective(self, trial: Trial) -> float:
+        """Objective method.
+
+        Parameters
+        ----------
+        trial : Trial
+            Current trial.
+
+        Returns
+        -------
+        score : dict
+            Dictionary of the results.
+        """
         self.make_network(trial)
         return self.score
 
     def optimize(
         self, study_name: str, direction: str | list, n_trials: int, n_jobs: int
     ) -> None:
+        """Main study method. Initializes study
+        and starts the optimization process.
+
+        Parameters
+        ----------
+        study_name : str
+            Name of the current study.
+        direction : list
+            List of study directions for score evaluation.
+        n_trials : int
+            Number of randomized hyperparamter trials.
+        n_jobs : int
+            Number of parallel jobs to run.
+        """
         self.study = create_study(
             study_name=study_name,
             directions=direction,

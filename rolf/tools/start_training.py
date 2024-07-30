@@ -63,7 +63,7 @@ def _dataset(config_path, train_config, seed, test_ratio, validation_ratio):
     return data
 
 
-def _training(train_config, data, devices):
+def _training(train_config: dict, data, devices):
     if isinstance(devices, int):
         msg = f"on {devices} device(s)"
     elif isinstance(devices, list):
@@ -118,6 +118,9 @@ def _training(train_config, data, devices):
 
 
 def _default_setter(val, name):
+    """Helper method to set default values if
+    no value is provided.
+    """
     info_msg = f"{_status('warn')} No {name} provided! "
     info_msg += f"Fallback to default value: '{val}'"
 
@@ -127,6 +130,7 @@ def _default_setter(val, name):
 
 
 def _status(state):
+    """Sets status messages."""
     match state:
         case "info":
             return "[cyan][INFO][/cyan]"
@@ -160,7 +164,13 @@ def _status(state):
     Example 3: `-d '[0, 1]'` selects GPUS 0 and 1
     """,
 )
-def main(config_path, seed, test_ratio, validation_ratio, devices):
+def main(
+    config_path: str | Path,
+    seed: int,
+    test_ratio: float,
+    validation_ratio: float,
+    devices: str,
+):
     devices = eval(devices)
 
     if isinstance(devices, int):

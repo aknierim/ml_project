@@ -16,7 +16,18 @@ from PySide6.QtWidgets import (
 
 
 class ImageViewerApp(QMainWindow):
-    def __init__(self, directory, recursive):
+    """Image viewer class."""
+
+    def __init__(self, directory: str | Path, recursive: bool):
+        """Initializes the image viewer.
+
+        Parameters
+        ----------
+        directory : str or Path
+            Path to the image directory.
+        recursive : bool
+            If `True`, also look for images in sub-directories.
+        """
         super().__init__()
 
         if not directory:
@@ -56,22 +67,17 @@ class ImageViewerApp(QMainWindow):
         self.index = 0
         self.load_image()
 
-        # Connect button clicks to navigation methods
         previous_button.clicked.connect(self.previous_image)
         next_button.clicked.connect(self.next_image)
 
-        # Create main layout
         layout = QVBoxLayout()
         layout.addWidget(self.text_label)
         layout.addWidget(self.image_label)
 
-        # Create horizontal layout below image
         hor_layout = QHBoxLayout()
         hor_layout.addWidget(previous_button)
         hor_layout.addWidget(next_button)
 
-        # Add horizontal layout to main layout
-        # and set the widgets layout
         layout.addLayout(hor_layout)
         qwidget.setLayout(layout)
 
@@ -122,7 +128,7 @@ class ImageViewerApp(QMainWindow):
     "--recursive",
     "-r",
     is_flag=True,
-    help="If True, also looks for images in subdirectories.",
+    help="If True, also looks for images in sub-directories.",
 )
 def main(directory, recursive):
     app = QApplication(sys.argv)

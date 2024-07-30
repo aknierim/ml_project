@@ -4,7 +4,16 @@ from zipfile import ZipFile
 import click
 
 
-def unzip(source_path, dest_path) -> None:
+def unzip(source_path: str | Path, dest_path: str | Path) -> None:
+    """Unpacks a zip file.
+
+    Parameters
+    ----------
+    source_path : str or Path
+        Path to the input zip file.
+    dest_path : str or Path
+        Destination path.
+    """
     source_path = Path(source_path)
     dest_path = Path(dest_path)
 

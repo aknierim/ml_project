@@ -1,3 +1,5 @@
+"""Data handling module."""
+
 import shutil
 from pathlib import Path
 
@@ -10,6 +12,7 @@ import tomli
 import torch
 from astropy.table import QTable
 from joblib import Parallel, delayed
+from numpy.typing import ArrayLike
 from rich.progress import Progress, track
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler, random_split
 from torchvision.io import read_image
@@ -19,10 +22,23 @@ ROOT = Path(__file__).parents[2].resolve()
 
 
 class GetData:
-    def __init__(self, output_directory) -> None:
+    """Data downloader class."""
+
+    def __init__(self, output_directory: str | Path) -> None:
+        """Initializes the class.
+
+        Parameters
+        ----------
+        output_directory : Path or str
+            Output directory for the data download.
+        """
         self.output_directory = output_directory
 
     def from_name(self) -> None:
+        """Downloads files from the URLs provided in the
+        urls.toml file provided in the root directory of
+        the source repository.
+        """
         with open(ROOT / "urls.toml", "rb") as f:
             urls = tomli.load(f)
 
@@ -42,7 +58,21 @@ class GetData:
         progress: Progress,
         task: int,
     ) -> None:
-        """ """
+        """Downloads a data file from a given URL.
+
+        Parameters
+        ----------
+        filename : str or Path
+            Name of the output file.
+        url : str
+            URL to download from.
+        output_directory : str or Path
+            Output directory.
+        progress : rich.progress.Progress
+            Progress bar instance.
+        task : int
+            Current progress bar task id.
+        """
         if not isinstance(url, str):
             raise TypeError("Expected type str for url!")
 
@@ -53,7 +83,7 @@ class GetData:
 
         progress.update(task, advance=1)
 
-    def from_url(self, url: str):
+    def from_url(self, url: str) -> None:
         """Downloads a file from a given URL to a given
         output directory.
 
@@ -61,8 +91,6 @@ class GetData:
         ----------
         url : str
             URL of the file.
-        output_directory : Path
-            Output directory.
         """
         if not isinstance(url, str):
             raise TypeError("Expected type str for url!")
@@ -70,7 +98,17 @@ class GetData:
         filename = Path(url.split("/")[-1])
         self._download(url, filename)
 
-    def _download(self, url, filename) -> None:
+    def _download(self, url: str, filename: str | Path) -> None:
+        """Downloads files from given url
+        and saves them to the output directory.
+
+        Parameters
+        ----------
+        url : str
+            URL to download from.
+        filename : str or Path
+            Output file name.
+        """
         filename = self.output_directory / filename
 
         if filename.is_file():
@@ -81,6 +119,8 @@ class GetData:
 
 
 class CreateTorchDataset(Dataset):
+    """TorchDataset constructor class."""
+
     def __init__(
         self,
         img_labels: list[int],
@@ -88,7 +128,22 @@ class CreateTorchDataset(Dataset):
         img_dir: str | Path,
         transform=None,
         target_transform=None,
-    ):
+    ) -> None:
+        """Initializes the class.
+
+        Parameters
+        ----------
+        img_labels : list[int]
+            Label data.
+        img_filepaths : list[str]
+            List of filepaths to the images.
+        img_dir : str or Path
+            Path to the image directory.
+        transform : torchvision.transforms
+            Transformation for the image dataset.
+        target_transform : torchvision.transforms
+            Transformation for the label data.
+        """
         if not isinstance(img_dir, Path):
             img_dir = Path(img_dir)
 
@@ -98,10 +153,25 @@ class CreateTorchDataset(Dataset):
         self.transform = transform
         self.target_transform = target_transform
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """Returns length of the dataset."""
         return len(self.img_labels)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> tuple:
+        """Item getter method.
+
+        Parameters
+        ----------
+        idx : int
+            Index of the image.
+
+        Returns
+        -------
+        image : torch.Tensor
+            Image array.
+        label : torch.Tensor
+            Label data.
+        """
         img_path = self.img_dir / self.img_filepaths[idx]
 
         image = read_image(img_path)
@@ -116,14 +186,30 @@ class CreateTorchDataset(Dataset):
 
 
 class ReadHDF5:
+    """Reads HDF5 data file and creates torch Datasets
+    and DataLoaders. Applys data splits and transformations.
+    """
+
     def __init__(
         self,
         filepath: str | Path,
         validation_ratio: float = None,
         test_ratio: float = None,
         random_state: int = 42,
-    ) -> pd.DataFrame | QTable:
-        """Reads HDF5 file and creates dataset."""
+    ) -> None:
+        """Reads HDF5 file and creates dataset.
+
+        Parameters
+        ----------
+        filepath : str or Path
+            Path to the HDF5 file.
+        validation_ratio : float, optional
+            Validation radio of the data split.
+        test_ratio : float, optional
+            Test ratio of the data split.
+        random_state : int, optional
+            Seed for the data split.
+        """
         if not isinstance(filepath, Path):
             filepath = Path(filepath)
 
@@ -135,10 +221,25 @@ class ReadHDF5:
 
         self.data_keys = ["train", "valid", "test"]
         self.transformer = {}
+
         for key in self.data_keys:
             self.transformer[key] = None
 
-    def get_full_data(self, progress=None, task=None):
+    def get_full_data(self, progress: Progress = None, task: int = None) -> QTable:
+        """Reads the full data from the hdf5 file.
+
+        Parameters
+        ----------
+        progress : rich.progress.Progress
+            Progress bar instance.
+        task : TaskID
+            Task ID of the current task.
+
+        Returns
+        -------
+        table : astropy.table.QTable
+            Table object.
+        """
         idx = []
         entries = []
         ra = []
@@ -211,6 +312,14 @@ class ReadHDF5:
         return table
 
     def get_labels_and_paths(self) -> pd.DataFrame:
+        """Lightweight hdf5 reading method that only
+        saves labels and image paths.
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            DataFrame containing labels, splits, and filepaths.
+        """
         filepaths = []
         labels = []
         splits = []
@@ -235,7 +344,19 @@ class ReadHDF5:
 
         return df
 
-    def _get_splits(self, data, use_img_array=False):
+    def _get_splits(self, data: pd.DataFrame) -> ArrayLike:
+        """Gets splits via validation_ratio and test_ratio.
+
+        Parameters
+        ----------
+        data : pandas.DataFrame
+            DataFrame containing filepaths, splits, and labels.
+
+        Returns
+        -------
+        splits : array_like
+            Array containing new splits.
+        """
         X = data["filepath"]
         y = data["label"]
 
@@ -260,7 +381,16 @@ class ReadHDF5:
 
         return splits
 
-    def make_transformer(self, progress=None, task=None) -> None:
+    def make_transformer(self, progress: Progress = None, task: int = None) -> None:
+        """Creates transformations for the dataset.
+
+        Parameters
+        ----------
+        progress : rich.progress.Progress
+            Progress bar instance.
+        task : TaskID
+            Task ID of the current task.
+        """
         if progress and task is not None:
             _ = self.get_full_data(progress, task)
             progress.console.print(
@@ -304,9 +434,25 @@ class ReadHDF5:
     def create_torch_datasets(
         self,
         img_dir: str | Path,
-        transform={},
+        transform: dict = {},
         target_transform=None,
     ) -> tuple:
+        """Creates torch Datasets.
+
+        Parameters
+        ----------
+        img_dir : str or Path
+            Base directory of the images.
+        transform : dict
+            Dictionary of transformations.
+        target_transform : torchvision.transforms
+            Transformation for the label data.
+
+        Returns
+        -------
+        tuple
+            Tuple of torch Datasets.
+        """
         data = self.get_labels_and_paths()
 
         train = data[data["split"] == "train"]
@@ -362,7 +508,29 @@ class ReadHDF5:
         valid_set: Dataset = None,
         test_set: Dataset = None,
         sampler: torch.utils.data.sampler.Sampler = None,
-    ):
+    ) -> tuple:
+        """Creates torch DataLoaders.
+
+        Parameters
+        ----------
+        batch_size : int
+            Batch size.
+        img_dir : str or Path
+            Base directory of the images.
+        train_set : torch.Dataset
+            Training dataset.
+        valit_set : torch.Dataset
+            Validation dataset.
+        test_set : torch.Dataset
+            Test dataset.
+        sampler: torch.utils.data.sampler.Sampler, optional
+            Data sampler.
+
+        Returns
+        -------
+        tuple
+            Tuple of torch DataLoaders.
+        """
         try:
             train_set = self.train_set
             valid_set = self.valid_set
@@ -411,7 +579,26 @@ class ReadHDF5:
         valid_set: Dataset = None,
         test_set: Dataset = None,
         sampler: torch.utils.data.sampler.Sampler = None,
-    ):
+    ) -> tuple:
+        """Creates datasets for the random forest classifier.
+        img_dir : str or Path
+            Base directory of the images.
+        train_set : torch.Dataset
+            Training dataset.
+        valit_set : torch.Dataset
+            Validation dataset.
+        test_set : torch.Dataset
+            Test dataset.
+        sampler: torch.utils.data.sampler.Sampler, optional
+            Data sampler.
+
+        Returns
+        -------
+        tuple
+            Tuple of X_train, X_valid, X_test,
+            y_train, y_valid, and y_test datasets.
+
+        """
         train, valid, test = self.create_data_loaders(
             batch_size=10,
             img_dir=img_dir,

@@ -26,7 +26,19 @@ from rolf.io import GetData
     help="Downloads the Radio Galaxy Dataset from a list of URLs.",
     default=False,
 )
-def main(output_directory, url, from_name):
+def main(output_directory: str | Path, url: str, from_name: bool):
+    """CLI tool to download data.
+
+    Parameters
+    ----------
+    output_directory : str or Path
+        Output directory for the downloaded data.
+    url : str
+        URL to download files from.
+    from_name : bool
+        If `True`, download from list of URLs found
+        in urls.toml in the root of the repository.
+    """
     if not isinstance(output_directory, Path):
         output_directory = Path(output_directory)
 

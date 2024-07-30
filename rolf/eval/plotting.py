@@ -1,6 +1,10 @@
+"""Plotting functions."""
+
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axis import Axis
 from matplotlib.ticker import StrMethodFormatter
+from numpy.typing import ArrayLike
 from sklearn.metrics import confusion_matrix
 
 LABELS_MAP = {
@@ -11,21 +15,54 @@ LABELS_MAP = {
 }
 
 
-def plot_train_val_rocauc(train, val, ax=None):
+def plot_train_val_rocauc(train: ArrayLike, val: ArrayLike, ax: Axis = None) -> None:
+    """Plots the train and validation ROC AUC scores.
+
+    Parameters
+    ----------
+    train : array_like
+        Train data.
+
+    val : array_like
+        Validation data.
+
+    ax : matplotlib.axis.Axis
+        Axis object.
+    """
     if ax is None:
-        ax = plt.gca()
+        ax: Axis = plt.gca()
 
     ax.plot(train["Step"], train["Value"], label="Train ROC AUC")
     ax.plot(val["Step"], val["Value"], label="Validation ROC AUC")
 
-    ax.set(xlabel="Step", ylabel="Accuracy")
+    ax.set(xlabel="Step", ylabel="ROC AUC score")
 
     ax.legend()
 
 
-def plot_sample(images, labels, labels_pred, axs=None):
+def plot_sample(
+    images: ArrayLike, labels: ArrayLike, labels_pred: ArrayLike, axs: Axis = None
+) -> Axis:
+    """Plots a sample of images with prediction and true labels.
+
+    Parameters
+    ----------
+    images : array_like
+        Image data.
+    labels : array_like
+        Array of true labels.
+    labels_pred : array_like
+        Array of prediction labels.
+    axs : matplotlib.axis.Axis
+        Axis object.
+
+    Returns
+    -------
+    axs : matplotlib.axis.Axis
+        Axis object.
+    """
     if axs is None:
-        axs = plt.gca()
+        axs: Axis = plt.gca()
 
     for ax, img, label, label_pred in zip(axs, images, labels, labels_pred):
         img = img.squeeze()
@@ -75,12 +112,42 @@ def plot_sample(images, labels, labels_pred, axs=None):
         )
         ax.imshow(img, cmap="inferno")
 
-    return ax
+    return axs
 
 
 def conf_matrix(
-    y_truth, y_pred, sample_weight=None, normalize=None, valfmt="{x:1.0f}", **kwargs
-):
+    y_truth: ArrayLike,
+    y_pred: ArrayLike,
+    sample_weight: ArrayLike = None,
+    normalize: str = None,
+    valfmt: str = "{x:1.0f}",
+    **kwargs,
+) -> tuple:
+    """Plots the confusion matrix for truths and predictions.
+
+    Parameters
+    ----------
+    y_truth : array_like
+        Truth labels.
+    y_pred : array_like
+        Prediction labels.
+    sample_weight : ArrayLike, optional
+        Weights for the classes.
+    normalize : str
+        Normalization. Can be `all`, `pred`, or `true`.
+    valfmt : str, optional
+        Formatting of the values.
+
+    Other Parameters
+    ----------------
+    **kwargs
+        Keyword arguments for sklearn confusion matrix.
+
+    Returns
+    -------
+    tuple
+        Tuple of imshow object, colorbar object, colormap object
+    """
     cm = confusion_matrix(
         y_truth, y_pred, sample_weight=sample_weight, normalize=normalize
     )
@@ -92,12 +159,12 @@ def conf_matrix(
 
 def plot_confusion_matrix(
     data,
-    labels=None,
-    ax=None,
+    labels: ArrayLike = None,
+    ax: Axis = None,
     cbar_kw=None,
-    cbarlabel="",
-    annotate=True,
-    valfmt="{x:1.0f}",
+    cbarlabel: str = "",
+    annotate: bool = True,
+    valfmt: str = "{x:1.0f}",
     **kwargs,
 ) -> tuple:
     """
