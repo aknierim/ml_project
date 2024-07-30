@@ -1,11 +1,12 @@
 """Random Forest model"""
 
+from pathlib import Path
+
+import numpy as np
+import sklearn
+from joblib import dump, load
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
-from pathlib import Path
-from joblib import load, dump
-import sklearn
-import numpy as np
 
 
 class RandomForest:
@@ -20,7 +21,7 @@ class RandomForest:
         with open(self.model_path, "rb") as f:
             self.model = load(f)
 
-    def get_model(self) -> sklearn.ensemble._forest.RandomForestClassifier:
+    def get_model(self) -> sklearn.ensemble.RandomForestClassifier:
         return self.model
 
     def fit_model(self, X_train, y_train) -> None:
@@ -31,7 +32,7 @@ class RandomForest:
 
     def get_params(self, **kwargs):
         return self.model.get_params(**kwargs)
-    
+
     def predict_model(self, X_test) -> np.ndarray:
         self.y_pred = self.model.predict(X_test)
         return self.y_pred
