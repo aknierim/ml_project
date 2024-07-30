@@ -34,9 +34,14 @@ def plot_param_importances(
     target_name: str = "Objective Value",
     fontsize=12,
 ):
-    importances_infos = _get_importances_infos(
-        study, evaluator, params, target, target_name
-    )
+    if isinstance(study, _ImportancesInfo):
+        importances_infos = study
+    elif isinstance(study, tuple):
+        importances_infos = study
+    else:
+        importances_infos = _get_importances_infos(
+            study, evaluator, params, target, target_name
+        )
 
     height = 0.8 / len(importances_infos)
 
@@ -103,7 +108,7 @@ def plot_parallel_coordinate(
     target_name = info.target_name
 
     # Set up the graph style.
-    cmap = plt.get_cmap(f"{cmap}_r" if reversescale else cmap)
+    cmap = plt.get_cmap(f"{cmap}" if reversescale else f"{cmap}_r")
 
     ax.spines["top"].set_visible(False)
     ax.spines["bottom"].set_visible(False)
