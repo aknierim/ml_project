@@ -1,0 +1,22 @@
+class_weights: null
+epochs: 300
+lr_scheduler: cyclic
+model_hparams:
+  activation_name: prelu
+  block_groups:
+  - 3
+  - 3
+  - 3
+  block_name: PreActBlock
+  dropout: 0.00514522464263313
+  hidden_channels:
+  - 32
+  - 64
+  - 128
+  num_classes: 4
+model_name: ResNet
+optimizer_hparams:
+  lr: 0.00026173639920195935
+  momentum: -1
+  weight_decay: 2.565368866725289e-05
+optimizer_name: Adam
