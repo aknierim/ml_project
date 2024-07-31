@@ -1,3 +1,5 @@
+"""CLI tool for data downloads."""
+
 from pathlib import Path
 
 import click
