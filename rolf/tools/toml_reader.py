@@ -1,10 +1,21 @@
+"""Config file reader."""
+
 from pathlib import Path
 
 import tomli
 
 
 class ReadConfig:
-    def __init__(self, config_path) -> None:
+    """Config reader class."""
+
+    def __init__(self, config_path: str | Path) -> None:
+        """Initializes the config reader.
+
+        Parameters
+        ----------
+        config_path : str or Path
+            Path to the config file.
+        """
         self.config_path = Path(config_path)
         with open(self.config_path, "rb") as f:
             self.toml = tomli.load(f)
@@ -24,6 +35,13 @@ class ReadConfig:
         self.opt_hyperparams = self.toml["optimizer_hyperparams"]
 
     def training(self) -> dict:
+        """Creates the training config dictionary.
+
+        Returns
+        -------
+        training_config : dict
+            Dictionary of the training config.
+        """
         self.training_config = {}
         self.training_config["paths"] = {
             "data": Path(self.paths["data"]),
@@ -40,6 +58,13 @@ class ReadConfig:
         return self.training_config
 
     def tuning(self) -> dict:
+        """Creates the tuning config dictionary.
+
+        Returns
+        -------
+        tuning_cfg : dict
+            Dictionary of the tuning config.
+        """
         if not self.tuning_mode:
             raise ValueError(f"No tuning configuration found in {self.config_path}!")
 

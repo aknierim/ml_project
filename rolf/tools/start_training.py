@@ -14,7 +14,19 @@ FILE_DIR = Path(__file__).parent.resolve()
 CONSOLE = Console()
 
 
-def _get_config(config_path):
+def _get_config(config_path: str | Path) -> dict:
+    """Read config file at config path.
+
+    Parameters
+    ----------
+    config_path : str or Path
+        Path to the config file.
+
+    Returns
+    -------
+    train_config : dict
+        Dictionary containing the training config.
+    """
     if config_path is None:
         config_path = FILE_DIR / "../../configs/full_train.toml"
         config_path = _default_setter(config_path.absolute().resolve(), "config path")
@@ -29,7 +41,33 @@ def _get_config(config_path):
     return train_config
 
 
-def _dataset(config_path, train_config, seed, test_ratio, validation_ratio):
+def _dataset(
+    config_path: str | Path,
+    train_config: dict,
+    seed: int,
+    validation_ratio: float,
+    test_ratio: float,
+) -> ReadHDF5:
+    """Creates a ReadHDF5 data object. Applies splits to the data.
+
+    Parameters
+    ----------
+    config_path : str or Path
+        Path to the config file.
+    train_config : dict
+        Dictionary containing the training config.
+    seed : int
+        Seed for the data split.
+    validation_ratio : float
+        Validation ratio of the data split.
+    test_ratio : float
+        Test ratio of the data split.
+
+    Returns
+    -------
+    data : ReadHDF5 instance
+        ReadHDF5 instance with data splits applied.
+    """
     print("")
     CONSOLE.print(f"{_status('info')}[bold blue] Loading data:")
 
@@ -63,7 +101,23 @@ def _dataset(config_path, train_config, seed, test_ratio, validation_ratio):
     return data
 
 
-def _training(train_config: dict, data, devices):
+def _training(train_config: dict, data: ReadHDF5, devices: int | list) -> tuple:
+    """Starts the actual training process.
+
+    Parameters
+    ----------
+    train_config: dict
+        Dictionary containing the training config.
+    data : ReadHDF5 instance
+        ReadHDF5 instance with data splits applied.
+    devices : int or list
+        Number of devices or list of specific device IDs.
+
+    Returns
+    -------
+    tuple
+        Tuple of model instance and dict with results.
+    """
     if isinstance(devices, int):
         msg = f"on {devices} device(s)"
     elif isinstance(devices, list):
@@ -167,8 +221,8 @@ def _status(state):
 def main(
     config_path: str | Path,
     seed: int,
-    test_ratio: float,
     validation_ratio: float,
+    test_ratio: float,
     devices: str,
 ):
     devices = eval(devices)

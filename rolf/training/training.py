@@ -17,7 +17,27 @@ MODEL_DICT = {"ResNet": ResNet}  # Expandable
 OPTIMIZERS = {"Adam": optim.AdamW, "SGD": optim.SGD}
 
 
-def _create_model(model_name, model_hparams):
+def _create_model(model_name: str, model_hparams: dict):
+    """Initializes a model from the models available in
+    MODEL_DICT.
+
+    Parameters
+    ----------
+    model_name : str
+        Name of the model. Must be in MODEL_DICT.
+    model_hparams : dict
+        Dictionary of model parameters.
+
+    Returns
+    -------
+    model
+        Initialized model instance.
+
+    Raises
+    ------
+    ValueError
+        If model_name not in MODEL_DICT.
+    """
     if model_name in MODEL_DICT:
         return MODEL_DICT[model_name](**model_hparams)
     else:
@@ -67,10 +87,33 @@ class TrainModule(L.LightningModule):
         # Example input for visualizing the graph in Tensorboard
         self.example_input_array = torch.zeros((1, 1, 300, 300))
 
-    def forward(self, imgs):
+    def forward(self, imgs: torch.Tensor):
+        """Forwards images to the model.
+
+        Parameters
+        ----------
+        imgs : array_like
+            Image data.
+
+        Returns
+        -------
+        model instance
+        """
         return self.model(imgs)
 
     def configure_optimizers(self) -> tuple[list, list]:
+        """Configures and selects the optimizer.
+
+        Returns
+        -------
+        tuple
+            Tuple of lists of optimizer and scheduler objects.
+
+        Raises
+        ------
+        ValueError
+            If hparams.optimizer name not in OPTIMIZERS.
+        """
         if self.hparams.optimizer_name in OPTIMIZERS:
             if self.hparams.optimizer_name == "Adam":
                 self.hparams.optimizer_hparams.pop("momentum", None)
@@ -181,8 +224,6 @@ class TrainModule(L.LightningModule):
             s2 = optim.lr_scheduler.MultiStepLR(
                 optimizer, milestones=[mid, 100, 150, 200, 250], gamma=0.5
             )
-            # s1 = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9, last_epoch=-1)
-            # s1 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200, last_epoch=360)
             scheduler = torch.optim.lr_scheduler.SequentialLR(
                 optimizer, schedulers=[s1, s2], milestones=[mid]
             )
@@ -190,7 +231,20 @@ class TrainModule(L.LightningModule):
         return [optimizer], [scheduler]
 
     def training_step(self, batch, batch_idx):
-        """Log training roc auc and loss (per epoch by default)"""
+        """Log training ROC AUC, accuracy, and loss per epoch.
+
+        Parameters
+        ----------
+        batch : Dataset
+            Torch dataloader batch.
+        batch_idx : int
+            Index of the batch.
+
+        Returns
+        -------
+        loss : float
+            Training loss.
+        """
         imgs, labels = batch
         preds = self.model(imgs).softmax(dim=1)
         loss = self.loss_module(preds, labels)
@@ -215,7 +269,21 @@ class TrainModule(L.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx) -> None:
-        """Log validation roc auc and loss (per epoch by default)"""
+        """Log validation ROC AUC, accuracy, and loss per epoch.
+
+        Parameters
+        ----------
+        batch : Dataset
+            Torch dataloader batch.
+        batch_idx : int
+            Index of the batch.
+
+        Returns
+        -------
+        loss : float
+            Validation loss.
+        """
+
         imgs, labels = batch
         preds = self.model(imgs).softmax(dim=1)
         loss = self.val_loss_module(preds, labels)
@@ -238,7 +306,15 @@ class TrainModule(L.LightningModule):
         self.log("val_loss", loss)
 
     def test_step(self, batch, batch_idx) -> None:
-        """Log test roc auc (per epoch by default)"""
+        """Log test ROC AUC and accuracy after training.
+
+        Parameters
+        ----------
+        batch : Dataset
+            Torch dataloader batch.
+        batch_idx : int
+            Index of the batch.
+        """
         imgs, labels = batch
         preds = self.model(imgs).softmax(dim=1)
 
@@ -268,11 +344,11 @@ def train_model(
     save_name: str | Path = "",
     epochs: int = 300,
     class_weights: list = None,
-    devices: int = 1,
+    devices: int | list = 1,
     lr_scheduler: str = "multi",
     print_model: bool = False,
     **kwargs,
-):
+) -> tuple:
     """Train the model passed via 'model_name'.
 
     Parameters
@@ -281,9 +357,36 @@ def train_model(
         Name of the model you want to run. Is used
         to look up the class in 'MODEL_DICT'
     train_loader : DataLoader
+        Torch dataloader containing train data.
+    val_loader : DataLoader
+        Torch dataloader containing validation data.
+    test_loader : DataLoader
+        Torch dataloader containing test data.
+    checkpoint_path: str | Path,
+        Path to directory where checkpoints will be saved.
     save_name : str, optional
-        If specified, this name will be used
-        for creating the checkpoint and logging directory.
+        Name of the checkpoint.
+    epochs: int
+        Number of epochs.
+    class_weights: list
+        Class weights for the loss function.
+    devices: int or list
+        Number of devices or list of specific devices to use.
+    lr_scheduler: str
+        Name of the lr scheduler to use.
+    print_model: bool
+        Print a model summary before the training process.
+
+    Other Parameters
+    ----------------
+    **kwargs
+        Additional keyword arguments for the TrainModule instance.
+
+    Returns
+    -------
+    tuple
+        Tuple of model instance, results dict, and lightning
+        trainer instance.
     """
     if not save_name:
         save_name = model_name
