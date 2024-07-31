@@ -76,7 +76,7 @@ def _info_tools():
     # Adapted from ctapipe
     # https://github.com/cta-observatory/ctapipe/blob/main/src/ctapipe/tools/info.py
     print("\n*** ROLF cli-tools ***\n")
-    print("The following can be executed by typing rolf-<toolname>:")
+    print("The following can be executed by typing <toolname>:")
     print("")
     tools = {
         ep.name: ep.value

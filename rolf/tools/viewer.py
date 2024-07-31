@@ -1,3 +1,5 @@
+"""GUI-based image viewer."""
+
 import sys
 from pathlib import Path
 
