@@ -1,11 +1,10 @@
 from pathlib import Path
-from typing import Callable
 
 import numpy as np
 from optuna import Trial, create_study
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import make_scorer
-from sklearn.model_selection import cross_val_score
+from sklearn.metrics import make_scorer, accuracy_score
+from rolf.romf._validation import cross_val_score
 
 
 class SearchHyperparams:
@@ -51,26 +50,25 @@ class SearchHyperparams:
 
     def make_forest(self, trial: Trial, n_forest_jobs: int) -> None:
         self.use = {}
-        # print(self.use)
         for key in self.params:
             pars = self.params[key]
-            if isinstance(pars, tuple):
-                # print("1", key, pars)
+            if type(pars) == tuple:
                 self.use[key] = trial.suggest_int(
                     key, low=pars[0], high=pars[1], step=pars[2]
                 )
-            elif isinstance(pars, list):
-                # print("2", key, pars)
+            elif type(pars) == list:
                 self.use[key] = trial.suggest_categorical(key, pars)
             else:
-                # print("3", key, pars)
                 self.use[key] = pars
+
         self.rf = RandomForestClassifier(
             **self.use, n_jobs=n_forest_jobs, random_state=self.random_state
         )
 
-    def scorer(self, score) -> None:
-        self.scorer = make_scorer(score)
+
+    def scorer(self, score, scorer_params) -> None:
+        self.scorer_params = scorer_params
+        self.scorer = make_scorer(score, response_method="predict_proba")
 
     def cross_validate(self, function: Callable) -> None:
         self.cv = function
@@ -80,25 +78,32 @@ class SearchHyperparams:
 
     def objective(self, trial, X, y, n_forest_jobs) -> float:
         self.make_forest(trial, n_forest_jobs)
-
-        scores = cross_val_score(self.rf, X, y, scoring=self.scorer, cv=self.cv)
-        return np.min([np.mean(scores), np.median(scores)])
+        scores = cross_val_score(
+            self.rf,
+            X,
+            y,
+            scoring=self.scorer,
+            cv=self.cv,
+            score_params=self.scorer_params,
+        )
+        accu = cross_val_score(
+                    self.rf,
+                    X,
+                    y,
+                    scoring=accuracy_score,
+                    cv=self.cv,
+                    # score_params=self.scorer_params,
+                )
+        return np.min([np.mean(scores), np.median(scores)]), np.min([np.mean(accu), np.median(accu)])
 
     def read_data(self, X_train, y_train) -> None:
         self.X_train = X_train
         self.y_train = y_train
 
-    def optimize(
-        self,
-        study_name: str,
-        direction: str,
-        n_trials: int,
-        n_jobs: int,
-        n_forest_jobs: int,
-    ) -> None:
+    def optimize(self, study_name, direction, n_trials, n_jobs, n_forest_jobs) -> None:
         self.study = create_study(
             study_name=study_name,
-            direction=direction,
+            direction='maximize',# 'maximize'],
             storage=self.optuna_path,
             load_if_exists=True,
         )
