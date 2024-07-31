@@ -14,6 +14,61 @@ FILE_DIR = Path(__file__).parent.resolve()
 CONSOLE = Console()
 
 
+@click.command()
+@click.option(
+    "--config-path",
+    "-c",
+    type=click.Path(exists=True, dir_okay=False, file_okay=True),
+    help="Path to the config file.",
+)
+@click.option("--seed", "-s", type=int, help="Random state for the data split.")
+@click.option(
+    "--validation_ratio", type=float, help="Validation ratio for the data split."
+)
+@click.option("--test_ratio", type=float, help="Test ratio for the data split.")
+@click.option(
+    "--devices",
+    "-d",
+    type=str,
+    default=1,
+    show_default=True,
+    help="""Number of devices or list of device IDs.
+    Example 1: `-d 1` selects one GPU. \t\t
+    Example 2: `-d '[0]'` selects GPU 0 \t\t
+    Example 3: `-d '[0, 1]'` selects GPUS 0 and 1
+    """,
+)
+def main(
+    config_path: str | Path,
+    seed: int,
+    validation_ratio: float,
+    test_ratio: float,
+    devices: str,
+):
+    devices = eval(devices)
+
+    if isinstance(devices, int):
+        pass
+    elif isinstance(devices, list):
+        if isinstance(devices[0], int):
+            pass
+        pass
+    else:
+        raise TypeError(
+            "Unsupported type for devices! "
+            "Try 'rolf-train --help' for more information."
+        )
+
+    train_config = _get_config(config_path)
+    data = _dataset(config_path, train_config, seed, test_ratio, validation_ratio)
+    model, results = _training(train_config, data, devices)
+
+    print("")
+    CONSOLE.print(f"{_status('info')}[bold blue] Results:")
+    CONSOLE.print(f"{_status('info')} {results}")
+    print("")
+
+
 def _get_config(config_path: str | Path) -> dict:
     """Read config file at config path.
 
@@ -192,61 +247,6 @@ def _status(state):
             return "[yellow][WARN][/yellow]"
         case "err":
             return "[red][ERROR][/red]"
-
-
-@click.command()
-@click.option(
-    "--config-path",
-    "-c",
-    type=click.Path(exists=False, dir_okay=True, file_okay=False),
-    help="Path to the config file.",
-)
-@click.option("--seed", "-s", type=int, help="Random state for the data split.")
-@click.option(
-    "--validation_ratio", type=float, help="Validation ratio for the data split."
-)
-@click.option("--test_ratio", type=float, help="Test ratio for the data split.")
-@click.option(
-    "--devices",
-    "-d",
-    type=str,
-    default=1,
-    show_default=True,
-    help="""Number of devices or list of device IDs.
-    Example 1: `-d 1` selects one GPU. \t\t
-    Example 2: `-d '[0]'` selects GPU 0 \t\t
-    Example 3: `-d '[0, 1]'` selects GPUS 0 and 1
-    """,
-)
-def main(
-    config_path: str | Path,
-    seed: int,
-    validation_ratio: float,
-    test_ratio: float,
-    devices: str,
-):
-    devices = eval(devices)
-
-    if isinstance(devices, int):
-        pass
-    elif isinstance(devices, list):
-        if isinstance(devices[0], int):
-            pass
-        pass
-    else:
-        raise TypeError(
-            "Unsupported type for devices! "
-            "Try 'rolf-train --help' for more information."
-        )
-
-    train_config = _get_config(config_path)
-    data = _dataset(config_path, train_config, seed, test_ratio, validation_ratio)
-    model, results = _training(train_config, data, devices)
-
-    print("")
-    CONSOLE.print(f"{_status('info')}[bold blue] Results:")
-    CONSOLE.print(f"{_status('info')} {results}")
-    print("")
 
 
 if __name__ == "__main__":
