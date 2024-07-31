@@ -21,7 +21,9 @@ for scholarly, educational, and private non-commercial use. Inquiries for potent
 addressed to: Robert Becker, Physics Dept, University of California, Davis, CA 95616"
 
 
-## Installation
+## Installation and Usage
+
+### Installation
 
 To use the code in this repository, install the conda virtual environment found in
 `environment.yml`. An installation of [Miniforge3](https://github.com/conda-forge/miniforge) is recommended since
@@ -32,11 +34,68 @@ The environment can be installed via
 ```
 $ mamba env create -f environment.yml
 ```
+and can be activated by calling
+```
+$ mamba activate rolf
+```
 
-Additionally, you will need an installation of `cuda >= 12.1` to fully utilize pytorch.
+A dev version of the environment can be installed via the file `environment_dev.yml`
+After you installed and activated the environment, please install the `rolf` package
+using [pip](https://pypi.org/project/pip/)
+```
+$ pip install -e .
+```
+
+Additionally, you will need an installation of `cuda >= 12.1` to fully utilize PyTorch.
 Versions lower than `12.1` may work too, but have not been tested. Change the version
 in the environment file depending on the version installed on your system.
 
+### Usage
+Make sure you have installed the environment and `rolf` and have activated it
+call
+```
+$ rolf-info
+```
+to print an overview of available commands.
+```
+$ rolf-info --tools
+```
+will print an overview of all available command-line interface (CLI) tools.
+
+#### Data Download and Unpacking
+Before any model can be trained, please call
+```
+$ rolf-data -n -o build
+```
+in the root directory of the repository. This will download the data from the
+list of URLs in `urls.toml`. Then call
+```
+$ rolf-unpack build/galaxy_data_h5.zip -o data
+```
+and
+```
+$ rolf-unpack build/galaxy_data.zip -o data
+```
+to unpack the data to the data directory. The directories are created automatically.
+
+#### Training
+- The training of ROLF can be started using
+```
+$ rolf-train
+```
+- The hyperparameter optimization can be started via
+```
+$ rolf-optim
+```
+- The training of the random forest classifier ROMF can be started using
+```
+$ romf-train
+```
+- The hyperparamter optimization of the random forest classifier can be started by calling
+```
+$ romf-optim
+```
+All optional arguments of the CLI tools can be printed by adding a `--help` flag.
 
 ## References
 [1] Griese, F., Kummer, J., & Rustige, L., ***"Radio Galaxy Dataset (v0.1.3)"***, Zenodo (2022).
