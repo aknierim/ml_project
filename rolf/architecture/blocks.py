@@ -1,8 +1,22 @@
+"""Implementation of the two available ResNet blocks:
+Residual block and pre-activation block
+"""
+
+from collections.abc import Callable
+
 import torch.nn as nn
+from numpy.typing import ArrayLike
 
 
 class ResBlock(nn.Module):
-    def __init__(self, c_in, act_fn, subsample=False, c_out=-1, dropout=0.0):
+    def __init__(
+        self,
+        c_in: int,
+        act_fn: Callable,
+        subsample: bool = False,
+        c_out: int = -1,
+        dropout: float = 0.0,
+    ) -> None:
         """Implementation of a ResBlock.
 
         Parameters
@@ -37,7 +51,6 @@ class ResBlock(nn.Module):
             nn.BatchNorm2d(c_out),
             act_fn(),
             nn.Conv2d(c_out, c_out, kernel_size=3, padding=1, bias=False),
-            # nn.BatchNorm2d(c_out),
         )
 
         self.downsample = (
@@ -45,7 +58,19 @@ class ResBlock(nn.Module):
         )
         self.act_fn = act_fn()
 
-    def forward(self, x):
+    def forward(self, x: ArrayLike) -> ArrayLike:
+        """Skip connection for the ResBlock.
+
+        Parameters
+        ----------
+        x : array_like
+            Input of the ResBlock.
+
+        Returns
+        -------
+        array_like
+            Output of the ResBlock.
+        """
         temp = self.net(x)
         if self.downsample is not None:
             x = self.downsample(x)
@@ -54,7 +79,14 @@ class ResBlock(nn.Module):
 
 
 class PreActBlock(nn.Module):
-    def __init__(self, c_in, act_fn, subsample=False, c_out=-1, dropout=0.0) -> None:
+    def __init__(
+        self,
+        c_in: int,
+        act_fn: Callable,
+        subsample: bool = False,
+        c_out: int = -1,
+        dropout: float = 0.0,
+    ) -> None:
         """Implementation of a PreActBlock.
 
         Parameters
@@ -63,13 +95,13 @@ class PreActBlock(nn.Module):
             Number of input features
         act_fn : callable
             Activation class constructor (e.g. nn.ReLU)
-        subsample : bool
+        subsample : bool, optional
             If True, apply a stride inside the block and
             reduce the output shape by 2 in height and width
-        c_out : int
+        c_out : int, optional
             Number of output features. Only applies if
             subsample is True.
-        dropout: float
+        dropout: float, optional
             Dropout percentage.
         """
         super().__init__()
@@ -78,7 +110,6 @@ class PreActBlock(nn.Module):
             c_out = c_in
 
         self.net = nn.Sequential(
-            # nn.BatchNorm2d(c_in),
             act_fn(),
             nn.Dropout(dropout),
             nn.Conv2d(
@@ -116,7 +147,19 @@ class PreActBlock(nn.Module):
             else None
         )
 
-    def forward(self, x):
+    def forward(self, x: ArrayLike) -> ArrayLike:
+        """Skip connection for the ResBlock.
+
+        Parameters
+        ----------
+        x : array_like
+            Input of the ResBlock.
+
+        Returns
+        -------
+        temp + x: array_like
+            Output of the ResBlock.
+        """
         temp = self.net(x)
 
         if self.downsample is not None:
