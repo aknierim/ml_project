@@ -6,7 +6,7 @@ import numpy as np
 import sklearn
 from joblib import dump, load
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, roc_auc_score
 
 
 class RandomForest:
@@ -35,10 +35,13 @@ class RandomForest:
 
     def predict_model(self, X_test) -> np.ndarray:
         self.y_pred = self.model.predict(X_test)
-        return self.y_pred
+        self.y_pred_proba = self.model.predict_proba(X_test)
+        return self.y_pred, self.y_pred_proba
 
     def evaluate_model(self, y_test) -> float:
-        return accuracy_score(self.y_pred, y_test)
+        ac_score = accuracy_score(y_test, self.y_pred) 
+        ra_score = roc_auc_score(y_test, self.y_pred_proba, multi_class="ovo")
+        return ac_score, ra_score
 
     def save_model(self) -> None:
         with open(self.model_path, "wb") as f:
