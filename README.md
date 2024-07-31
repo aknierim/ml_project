@@ -105,6 +105,22 @@ $ romf-optim
 ```
 All optional arguments of the CLI tools can be printed by adding the `--help` flag.
 
+### Pre-trained Models
+We have provided pre-trained models in the `trained_models` directory.
+The ROLF model can be loaded and evaluated using the `classification_viewer.ipynb` notebook
+found in the `notebooks` directory. This notebook can also be used to evaluate checkpoints
+of models trained via `rolf-train`.
+
+### Monitoring
+The training progress of ROLF can be monitored using [TensorBoard](https://www.tensorflow.org/tensorboard):
+```
+$ tensorboard --logdir <path/to/checkpoints/directory>
+```
+The hyperparameter optimization can be monitored using [Optuna Dashboard](https://optuna-dashboard.readthedocs.io/en/latest/):
+```
+$ optuna-dashboard <path/to/database.sqlite3>
+```
+
 ## References
 [1] Griese, F., Kummer, J., & Rustige, L., ***"Radio Galaxy Dataset (v0.1.3)"***, Zenodo (2022).
 [https://zenodo.org/doi/10.5281/zenodo.7113623](https://zenodo.org/doi/10.5281/zenodo.7113623)
