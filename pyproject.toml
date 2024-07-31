@@ -39,8 +39,10 @@ dependencies = [
 rolf-info = "rolf.info:main"
 rolf-train = "rolf.tools.start_training:main"
 rolf-data = "rolf.tools.get_data:main"
-rolf-view = "rolf.io.viewer:main"
-rolf-unpack = "rolf.io.unpack:main"
+rolf-view = "rolf.tools.viewer:main"
+rolf-unpack = "rolf.tools.unpack:main"
+rolf-optim = "rolf.tools.rolf_optim:main"
+romf-optim = "rolf.tools.romf_optim:main"
 
 [project.optional-dependencies]
 dev = ["pre-commit", "setuptools_scm[toml]"]

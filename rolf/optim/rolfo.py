@@ -98,6 +98,8 @@ class ParameterOptimization:
                 "numpy.random.mtrand.RandomState instance!"
             )
 
+        self.devices = devices
+
     def load_data(self, image_path: str | Path) -> None:
         """Primes image path, loads data.
 
