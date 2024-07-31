@@ -6,8 +6,14 @@ The goal is to find one of four classes, *FR-I*, *FR-II*, *compact*, or *bent*,
 for each galaxy image.
 
 * [Dataset](#dataset)
-* [Installation](#installation)
+* [Installation and Usage](#installation-and-usage)
+  * [Installation](#installation)
+  * [Usage](#usage)
+    * [Data Download and Unpacking](#data-download-and-unpacking)
+    * [Training](#training)
+    * [Hyperparameter Optimization](#hyperparameter-optimization)
 * [References](#references)
+
 
 ## Dataset
 
@@ -83,19 +89,21 @@ to unpack the data to the data directory. The directories are created automatica
 ```
 $ rolf-train
 ```
-- The hyperparameter optimization can be started via
-```
-$ rolf-optim
-```
 - The training of the random forest classifier ROMF can be started using
 ```
 $ romf-train
 ```
-- The hyperparamter optimization of the random forest classifier can be started by calling
+
+#### Hyperparameter Optimization
+- The hyperparameter optimization for ROLF can be started via
+```
+$ rolf-optim
+```
+- The hyperparameter optimization of the random forest classifier can be started by calling
 ```
 $ romf-optim
 ```
-All optional arguments of the CLI tools can be printed by adding a `--help` flag.
+All optional arguments of the CLI tools can be printed by adding the `--help` flag.
 
 ## References
 [1] Griese, F., Kummer, J., & Rustige, L., ***"Radio Galaxy Dataset (v0.1.3)"***, Zenodo (2022).
