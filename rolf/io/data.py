@@ -11,9 +11,7 @@ import torch
 from astropy.table import QTable
 from joblib import Parallel, delayed
 from rich.progress import Progress, track
-from sklearn.model_selection import train_test_split
-from torch import FloatTensor
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler, random_split
 from torchvision.io import read_image
 from torchvision.transforms import v2 as transforms
 
@@ -114,7 +112,7 @@ class CreateTorchDataset(Dataset):
         if self.target_transform:
             label = self.target_transform(label)
 
-        return image.type(FloatTensor), label
+        return image.type(torch.FloatTensor), label
 
 
 class ReadHDF5:
@@ -140,7 +138,7 @@ class ReadHDF5:
         for key in self.data_keys:
             self.transformer[key] = None
 
-    def get_full_data(self):
+    def get_full_data(self, progress=None, task=None):
         idx = []
         entries = []
         ra = []
@@ -150,11 +148,11 @@ class ReadHDF5:
         labels = []
         splits = []
 
+        if progress and track is not None:
+            progress.console.print("[cyan][INFO][reset] Loading h5 file...")
+
         with h5py.File(self.filepath, "r") as file:
-            file_length = len(file.keys())
-            for i, key in track(
-                enumerate(file.keys()), total=file_length, description="Loading data..."
-            ):
+            for i, key in enumerate(file.keys()):
                 data_entry = file[key + "/Img"]
                 label_entry = np.array(file[key + "/Label_literature"], dtype=int)
                 split_entry = np.array(file[key + "/Split_literature"], dtype=str)
@@ -177,6 +175,10 @@ class ReadHDF5:
                 labels.append(label_entry)
                 splits.append(split_entry)
 
+        if progress and task is not None:
+            progress.advance(task)
+            progress.console.print("[cyan][INFO][reset] Creating data table object...")
+
         table = QTable(
             [idx, entries, ra, dec, sources, filepaths, labels, splits],
             names=(
@@ -191,8 +193,16 @@ class ReadHDF5:
             ),
         )
 
+        if progress and task is not None:
+            progress.advance(task)
+
         if self.validation_ratio and self.test_ratio:
+            if progress and task is not None:
+                progress.console.print("[cyan][INFO][reset] Applying data split...")
             table["split"] = self._get_splits(table)
+
+            if progress and task:
+                progress.advance(task)
 
         del idx, entries, ra, dec, sources, filepaths, labels, splits
 
@@ -225,34 +235,21 @@ class ReadHDF5:
 
         return df
 
-    def _get_splits(self, data):
+    def _get_splits(self, data, use_img_array=False):
         X = data["filepath"]
         y = data["label"]
 
-        indices = np.arange(len(y))
+        valid_count = int(len(y) * self.validation_ratio)
+        test_count = int(len(y) * self.test_ratio)
+        train_count = len(y) - valid_count - test_count
 
-        X_temp, _, y_temp, _, temp_idx, test_idx = train_test_split(
-            X,
-            y,
-            indices,
-            test_size=self.test_ratio,
-            shuffle=True,
-            random_state=self.random_state,
-        )
-        _, _, _, _, train_idx, valid_idx = train_test_split(
-            X_temp,
-            y_temp,
-            temp_idx,
-            test_size=self.validation_ratio,
-            shuffle=True,
-            random_state=self.random_state,
-        )
+        train, valid, test = random_split(X, [train_count, valid_count, test_count])
 
-        idx = np.concatenate((train_idx, valid_idx, test_idx))
+        idx = np.concatenate((train.indices, valid.indices, test.indices))
 
-        train_splits = np.full_like(train_idx, "train", dtype="<U5")
-        valid_splits = np.full_like(valid_idx, "valid", dtype="<U5")
-        test_splits = np.full_like(test_idx, "test", dtype="<U5")
+        train_splits = np.full_like(train.indices, "train", dtype="<U5")
+        valid_splits = np.full_like(valid.indices, "valid", dtype="<U5")
+        test_splits = np.full_like(test.indices, "test", dtype="<U5")
 
         split = np.concatenate((train_splits, valid_splits, test_splits))
 
@@ -263,8 +260,14 @@ class ReadHDF5:
 
         return splits
 
-    def make_transformer(self) -> None:
-        _ = self.get_full_data()
+    def make_transformer(self, progress=None, task=None) -> None:
+        if progress and task is not None:
+            _ = self.get_full_data(progress, task)
+            progress.console.print(
+                "[cyan][INFO][reset] Applying data transformations..."
+            )
+        else:
+            _ = self.get_full_data()
 
         mean, std = {}, {}
         for label in self.data_keys:
@@ -295,10 +298,13 @@ class ReadHDF5:
             ]
         )
 
+        if progress and task is not None:
+            progress.advance(task)
+
     def create_torch_datasets(
         self,
         img_dir: str | Path,
-        transform: dict = {},
+        transform={},
         target_transform=None,
     ) -> tuple:
         data = self.get_labels_and_paths()
@@ -307,6 +313,15 @@ class ReadHDF5:
         valid = data[data["split"] == "valid"]
         test = data[data["split"] == "test"]
 
+        class_sample_count = np.unique(train["label"], return_counts=True)[1]
+        self.train_weight = 1.0 / class_sample_count
+        samples_weight = np.array([self.train_weight[t] for t in train["label"]])
+        samples_weight = torch.from_numpy(samples_weight)
+
+        self.sampler = WeightedRandomSampler(
+            samples_weight.type("torch.DoubleTensor"), len(samples_weight)
+        )
+
         if len(transform.keys()) != 0:
             for key in self.data_keys:
                 try:
@@ -314,21 +329,25 @@ class ReadHDF5:
                 except KeyError:
                     continue
 
+        train_imgs = train["filepath"].to_numpy()
+        valid_imgs = valid["filepath"].to_numpy()
+        test_imgs = test["filepath"].to_numpy()
+
         self.train_set = CreateTorchDataset(
             train["label"].to_numpy(),
-            train["filepath"].to_numpy(),
+            train_imgs,
             img_dir=img_dir,
             transform=self.transformer["train"],
         )
         self.valid_set = CreateTorchDataset(
             valid["label"].to_numpy(),
-            valid["filepath"].to_numpy(),
+            valid_imgs,
             img_dir=img_dir,
             transform=self.transformer["valid"],
         )
         self.test_set = CreateTorchDataset(
             test["label"].to_numpy(),
-            test["filepath"].to_numpy(),
+            test_imgs,
             img_dir=img_dir,
             transform=self.transformer["test"],
         )
@@ -342,6 +361,7 @@ class ReadHDF5:
         train_set: Dataset = None,
         valid_set: Dataset = None,
         test_set: Dataset = None,
+        sampler: torch.utils.data.sampler.Sampler = None,
     ):
         try:
             train_set = self.train_set
@@ -353,13 +373,19 @@ class ReadHDF5:
         if None in (train_set, valid_set, test_set):
             train_set, valid_set, test_set = self.create_torch_datasets(img_dir)
 
+        try:
+            sampler = self.sampler
+        except AttributeError:
+            pass
+
         train_loader = DataLoader(
             train_set,
             batch_size=batch_size,
-            shuffle=True,
+            shuffle=True if sampler is None else False,
             drop_last=True,
             pin_memory=True,
             num_workers=4,
+            sampler=sampler,
         )
         valid_loader = DataLoader(
             valid_set,
@@ -377,3 +403,37 @@ class ReadHDF5:
         )
 
         return train_loader, valid_loader, test_loader
+
+    def create_rf_data(
+        self,
+        img_dir: str | Path,
+        train_set: Dataset = None,
+        valid_set: Dataset = None,
+        test_set: Dataset = None,
+        sampler: torch.utils.data.sampler.Sampler = None,
+    ):
+        train, valid, test = self.create_data_loaders(
+            batch_size=10,
+            img_dir=img_dir,
+            train_set=train_set,
+            valid_set=valid_set,
+            test_set=test_set,
+            sampler=sampler,
+        )
+
+        train = list(iter(train))
+        valid = list(iter(valid))
+        test = list(iter(test))
+
+        X_train = np.concatenate([train[i][0] for i in range(len(train))])
+        X_valid = np.concatenate([valid[i][0] for i in range(len(valid))])
+        X_test = np.concatenate([test[i][0] for i in range(len(test))])
+        y_train = np.concatenate([train[i][1] for i in range(len(train))])
+        y_valid = np.concatenate([valid[i][1] for i in range(len(valid))])
+        y_test = np.concatenate([test[i][1] for i in range(len(test))])
+
+        X_train = X_train.reshape((X_train.shape[0], np.prod(X_train.shape[1:])))
+        X_valid = X_valid.reshape((X_valid.shape[0], np.prod(X_valid.shape[1:])))
+        X_test = X_test.reshape((X_test.shape[0], np.prod(X_test.shape[1:])))
+
+        return X_train, X_valid, X_test, y_train, y_valid, y_test

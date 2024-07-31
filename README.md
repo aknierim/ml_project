@@ -5,6 +5,9 @@ This project aims to use a neural net to classify galaxies in the
 The goal is to find one of four classes, *FR-I*, *FR-II*, *compact*, or *bent*,
 for each galaxy image.
 
+* [Dataset](#dataset)
+* [Installation](#installation)
+* [References](#references)
 
 ## Dataset
 

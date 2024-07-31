@@ -78,16 +78,27 @@ def plot_sample(images, labels, labels_pred, axs=None):
     return ax
 
 
-def conf_matrix(y_truth, y_pred, **kwargs):
-    cm = confusion_matrix(y_truth, y_pred)
+def conf_matrix(
+    y_truth, y_pred, sample_weight=None, normalize=None, valfmt="{x:1.0f}", **kwargs
+):
+    cm = confusion_matrix(
+        y_truth, y_pred, sample_weight=sample_weight, normalize=normalize
+    )
 
-    im, cbar = plot_confusion_matrix(cm, **kwargs)
+    im, cbar = plot_confusion_matrix(cm, valfmt=valfmt, **kwargs)
 
-    return im, cbar
+    return im, cbar, cm
 
 
 def plot_confusion_matrix(
-    data, labels=None, ax=None, cbar_kw=None, cbarlabel="", annotate=True, **kwargs
+    data,
+    labels=None,
+    ax=None,
+    cbar_kw=None,
+    cbarlabel="",
+    annotate=True,
+    valfmt="{x:1.0f}",
+    **kwargs,
 ) -> tuple:
     """
     Create a heatmap from a numpy array and two lists of labels.
@@ -134,8 +145,8 @@ def plot_confusion_matrix(
         ha="left",
         rotation_mode="anchor",
     )
-    if labels is None:
-        ax.set_yticks(np.arange(data.shape[0]), labels=labels)
+    ax.set_yticks(np.arange(data.shape[0]), labels=labels)
+    ax.set(xlabel="Predicted Labels", ylabel="True Labels")
 
     ax.spines[:].set_visible(False)
 
@@ -145,7 +156,7 @@ def plot_confusion_matrix(
     ax.tick_params(which="minor", bottom=False, left=False)
 
     if annotate:
-        _annotate_heatmap(im)
+        _annotate_heatmap(im, valfmt=valfmt)
 
     return im, cbar
 

@@ -1,4 +1,4 @@
-name: radio_ml
+name: rolf
 channels:
   - conda-forge
   - pytorch
@@ -12,27 +12,21 @@ dependencies:
   - seaborn
   - pandas
   - astropy
-  - pytorch
-  - torchvision
-  - torchinfo
-  - pytorch-cuda=12.1
+  - pytorch=2.3.1=cuda118_py311h0047a46_300
+  - torchvision=0.18.1=cuda118py311h1a36abd_1
+  - pytorch-cuda=12.1=ha16c6d3_5
   - lightning
   - ipywidgets
+  - click
   - joblib
   - jupyter
   - jupyterlab
-  - jupyterlab_code_formatter
   - optuna
   - optuna-dashboard
   - rich
   - Pillow
   - h5py
   - pyside6
-  - pre-commit
-  - nbstripout
-  - black
-  - ruff
-  - nbqa
   - pip
   - pip:
     - jupyterlab-optuna

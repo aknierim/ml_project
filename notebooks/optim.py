@@ -9,7 +9,7 @@ def main():
         optuna_path="sqlite:////cephfs/projects/RADIO/radio_ml/resnet2.sqlite3",
         data_path="../data/galaxy_data_h5.h5",
         random_state=423,
-        validation_ratio=0.4,
+        validation_ratio=0.2,
         test_ratio=0.2,
     )
 
@@ -18,7 +18,9 @@ def main():
     pprint(optimizer.model_config)
     pprint(optimizer.tuning_config)
 
-    optimizer.optimize("Optim_ROC_AUC_noBN_drop", "maximize", n_trials=100, n_jobs=1)
+    optimizer.optimize(
+        "Optim_AUC_ACC", ["maximize", "maximize"], n_trials=100, n_jobs=1
+    )
 
 
 if __name__ == "__main__":

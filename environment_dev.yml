@@ -1,0 +1,38 @@
+name: rolf-dev
+channels:
+  - conda-forge
+  - pytorch
+  - nvidia
+dependencies:
+  - python=3.11
+  - numpy>=1.16.4
+  - scipy>=1.2.1
+  - scikit-learn>=0.24.1
+  - matplotlib
+  - seaborn
+  - pandas
+  - astropy
+  - pytorch=2.3.1=cuda118_py311h0047a46_300
+  - torchvision=0.18.1=cuda118py311h1a36abd_1
+  - pytorch-cuda=12.1=ha16c6d3_5
+  - lightning
+  - ipywidgets
+  - joblib
+  - click
+  - jupyter
+  - jupyterlab
+  - optuna
+  - optuna-dashboard
+  - rich
+  - Pillow
+  - h5py
+  - pyside6
+  - pre-commit
+  - nbstripout
+  - black
+  - ruff
+  - nbqa
+  - pip
+  - pip:
+    - jupyterlab-optuna
+    - tensorboard

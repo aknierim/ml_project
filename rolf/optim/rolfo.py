@@ -36,6 +36,7 @@ class ParameterOptimization:
         random_state: int | np.random.RandomState = None,
         validation_ratio: float = 0.1,
         test_ratio: float = 0.05,
+        devices=1,
     ) -> None:
         self.optim_conf_path = Path(optim_conf_path)
         reader = ReadConfig(self.optim_conf_path)
@@ -71,6 +72,7 @@ class ParameterOptimization:
             test_ratio=self.test_ratio,
             random_state=self.random_state,
         )
+        self.data.make_transformer()
 
         (
             self.train_loader,
@@ -141,7 +143,7 @@ class ParameterOptimization:
                 )
                 self._load_data()
 
-        self.score = result["val"]
+        self.score = (result["val"]["auc"], result["val"]["acc"])
 
     def _call_model(self, model_hparams, use_tuning, optimizer_hparams) -> tuple:
         model, result, _ = train_model(
@@ -155,6 +157,7 @@ class ParameterOptimization:
             optimizer_name=use_tuning["optimizer"],
             optimizer_hparams=optimizer_hparams,
             epochs=self.model_config["epochs"],
+            devices=self.devices,
         )
 
         return model, result
@@ -164,14 +167,15 @@ class ParameterOptimization:
         return self.score
 
     def optimize(
-        self, study_name: str, direction: str, n_trials: int, n_jobs: int
+        self, study_name: str, direction: str | list, n_trials: int, n_jobs: int
     ) -> None:
         self.study = create_study(
             study_name=study_name,
-            direction=direction,
+            directions=direction,
             storage=self.optuna_path,
             load_if_exists=True,
         )
+        self.study.set_metric_names(["ROC AUC", "Accuracy"])
         self.study.optimize(
             lambda trial: self.objective(trial),
             n_trials=n_trials,

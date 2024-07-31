@@ -13,9 +13,9 @@ class SearchHyperparams:
         self.forest_path = Path(forest_path)
         self.optuna_path = optuna_path
         self.cv = None
-        if random_state == None:
+        if random_state is None:
             self.random_state = np.random.mtrand.RandomState()
-        elif type(random_state) == int:
+        elif isinstance(random_state, int):
             self.random_state = np.random.mtrand.RandomState(random_state)
         elif type(random_state) == np.random.mtrand.RandomState:
             self.random_state = random_state
@@ -48,7 +48,7 @@ class SearchHyperparams:
     def class_weight(self, categorial) -> None:
         self.params["class_weight"] = categorial
 
-    def make_forest(self, trial: Trial, n_forest_jobs) -> None:
+    def make_forest(self, trial: Trial, n_forest_jobs: int) -> None:
         self.use = {}
         for key in self.params:
             pars = self.params[key]
@@ -65,11 +65,12 @@ class SearchHyperparams:
             **self.use, n_jobs=n_forest_jobs, random_state=self.random_state
         )
 
+
     def scorer(self, score, scorer_params) -> None:
         self.scorer_params = scorer_params
         self.scorer = make_scorer(score, response_method="predict_proba")
 
-    def cross_validate(self, function) -> None:
+    def cross_validate(self, function: Callable) -> None:
         self.cv = function
 
     def get_params(self) -> dict:
