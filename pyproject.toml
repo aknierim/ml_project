@@ -37,7 +37,7 @@ dependencies = [
 
 [project.scripts]
 rolf-info = "rolf.info:main"
-rolf-train = "rolf.tools.train:main"
+rolf-train = "rolf.tools.start_training:main"
 rolf-data = "rolf.tools.get_data:main"
 rolf-view = "rolf.io.viewer:main"
 rolf-unpack = "rolf.io.unpack:main"
@@ -48,7 +48,7 @@ dev = ["pre-commit", "setuptools_scm[toml]"]
 all = ["rolf[dev]"]
 
 [project.urls]
-repository = "https://github.com/aknierim/ml_project"
+repository = "https://github.com/aknierim/rolf"
 
 [tool.setuptools_scm]
 write_to = "rolf/_version.py"

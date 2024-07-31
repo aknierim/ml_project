@@ -18,6 +18,7 @@ dependencies:
   - lightning
   - ipywidgets
   - joblib
+  - click
   - jupyter
   - jupyterlab
   - optuna

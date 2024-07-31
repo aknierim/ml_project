@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
 from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint
+from rich.console import Console
 from sklearn.metrics import accuracy_score, roc_auc_score
 
 from rolf.architecture import ResNet
@@ -269,6 +270,7 @@ def train_model(
     class_weights: list = None,
     devices: int = 1,
     lr_scheduler: str = "multi",
+    print_model: bool = False,
     **kwargs,
 ):
     """Train the model passed via 'model_name'.
@@ -320,6 +322,10 @@ def train_model(
             lr_scheduler=lr_scheduler,
             **kwargs,
         )
+        if print_model:
+            console = Console()
+            console.print(model)
+
         trainer.fit(model, train_loader, val_loader)
         model = TrainModule.load_from_checkpoint(
             trainer.checkpoint_callback.best_model_path

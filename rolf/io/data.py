@@ -138,7 +138,7 @@ class ReadHDF5:
         for key in self.data_keys:
             self.transformer[key] = None
 
-    def get_full_data(self):
+    def get_full_data(self, progress=None, task=None):
         idx = []
         entries = []
         ra = []
@@ -148,11 +148,11 @@ class ReadHDF5:
         labels = []
         splits = []
 
+        if progress and track is not None:
+            progress.console.print("[cyan][INFO][reset] Loading h5 file...")
+
         with h5py.File(self.filepath, "r") as file:
-            file_length = len(file.keys())
-            for i, key in track(
-                enumerate(file.keys()), total=file_length, description="Loading data..."
-            ):
+            for i, key in enumerate(file.keys()):
                 data_entry = file[key + "/Img"]
                 label_entry = np.array(file[key + "/Label_literature"], dtype=int)
                 split_entry = np.array(file[key + "/Split_literature"], dtype=str)
@@ -175,6 +175,10 @@ class ReadHDF5:
                 labels.append(label_entry)
                 splits.append(split_entry)
 
+        if progress and task is not None:
+            progress.advance(task)
+            progress.console.print("[cyan][INFO][reset] Creating data table object...")
+
         table = QTable(
             [idx, entries, ra, dec, sources, filepaths, labels, splits],
             names=(
@@ -189,8 +193,16 @@ class ReadHDF5:
             ),
         )
 
+        if progress and task is not None:
+            progress.advance(task)
+
         if self.validation_ratio and self.test_ratio:
+            if progress and task is not None:
+                progress.console.print("[cyan][INFO][reset] Applying data split...")
             table["split"] = self._get_splits(table)
+
+            if progress and task:
+                progress.advance(task)
 
         del idx, entries, ra, dec, sources, filepaths, labels, splits
 
@@ -248,8 +260,14 @@ class ReadHDF5:
 
         return splits
 
-    def make_transformer(self) -> None:
-        _ = self.get_full_data()
+    def make_transformer(self, progress=None, task=None) -> None:
+        if progress and task is not None:
+            _ = self.get_full_data(progress, task)
+            progress.console.print(
+                "[cyan][INFO][reset] Applying data transformations..."
+            )
+        else:
+            _ = self.get_full_data()
 
         mean, std = {}, {}
         for label in self.data_keys:
@@ -279,6 +297,9 @@ class ReadHDF5:
                 transforms.Normalize(mean=[mean["test"]], std=[std["test"]]),
             ]
         )
+
+        if progress and task is not None:
+            progress.advance(task)
 
     def create_torch_datasets(
         self,

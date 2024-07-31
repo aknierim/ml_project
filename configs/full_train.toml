@@ -1,14 +1,14 @@
 [paths]
-data = "../data/galaxy_data/all"
-model = "../build/checkpoints/"
+data = "./data/"
+model = "./build/checkpoints/"
 
 [mode]
 verbose = true
 gpu = true
 
 [meta]
-save_name = "ResNet_tr15"
-batch_size = 58
+save_name = "ROLF_ResNet"
+batch_size = 55
 epochs = 300
 loss_func = "mse"
 
@@ -28,5 +28,5 @@ name = "Adam"
 
 [optimizer_hyperparams]
 lr = 0.00026173639920195935
-momentum = -1 # not necessary for Adam, hence set to -1
+momentum = -1 # not needed by Adam, hence set to -1
 weight_decay = 2.565368866725289e-05
