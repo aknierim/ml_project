@@ -1,3 +1,5 @@
+"""Starts the hyperparameter optimization for ROLF"""
+
 from pathlib import Path
 
 import click

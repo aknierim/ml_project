@@ -1,3 +1,5 @@
+"""Starts the hyperparameter optimization for the random forest classifier ROMF"""
+
 from pathlib import Path
 
 import click
