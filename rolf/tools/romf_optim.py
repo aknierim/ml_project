@@ -4,7 +4,7 @@ from pathlib import Path
 
 import click
 import numpy as np
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import accuracy_score, roc_auc_score
 from sklearn.model_selection import KFold
 
 from rolf.romf.data import LoadData
@@ -62,15 +62,18 @@ def main(input_file: str | Path, output_file: str | Path, seed: int):
     search.class_weight([None])
     search.get_params()
 
-    search.scorer(
-        roc_auc_score, scorer_params={"multi_class": "ovo", "labels": [0, 1, 2, 3]}
+    search.scorers(
+        score1=accuracy_score,
+        score2=roc_auc_score,
+        scorer_params2={"multi_class": "ovo", "labels": [0, 1, 2, 3]},
+        make2={"response_method": "predict_proba"},
     )
     search.cross_validate(KFold(n_splits=6, shuffle=True, random_state=rng))
 
     search.read_data(X_train, y_train)
 
     search.optimize(
-        "double_sore",
+        "double_score",
         ["maximize", "maximize"],
         n_trials=250,
         n_jobs=1,
