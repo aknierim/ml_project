@@ -88,6 +88,8 @@ $ rolf-unpack build/galaxy_data.zip -o data
 to unpack the data to the data directory. The directories are created automatically.
 
 #### Training
+Config files for both the training and the hyperparameter optimization are provided in the `configs` directory
+and are loaded per default when calling any of the following CLI tools.
 - The training of ROLF can be started using
 ```
 $ rolf-train
