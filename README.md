@@ -60,8 +60,8 @@ Versions lower than `12.1` may work too, but have not been tested. Change the ve
 in the environment file depending on the version installed on your system.
 
 ### Usage
-Make sure you have installed the environment and `rolf` and have activated it
-call
+Make sure you have installed the environment and `rolf` and have activated it.
+Call
 ```
 $ rolf-info
 ```
